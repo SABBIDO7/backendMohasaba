@@ -88,15 +88,7 @@ def removeList(index):
 
     
             
-def checkList(uid): 
-    
-    i = 0
-    now = datetime.now()
-    currentDay = now.strftime("%D:%H:%M").split(":")[0]
-    currentHour = now.strftime("%D:%H:%M").split(":")[1]
-    currentMin = now.strftime("%D:H:%M").split(":")[2]
-  
-    return("authorized|"+activelist[i].split("|")[0]+ "|" + activelist[i].split("|")[3])
+
   
         
 
@@ -159,70 +151,66 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
 
 @app.post("/INVOICE_DATA_SELECT/")
 async def getAccounts(data:dict):
-    if checkList(data["token"]) == "unauthorized":
-        return{"Info":"unauthorized"}
+    username=data["username"]
 
-    elif checkList(data["token"]).split("|")[0] == "authorized":
-        username = checkList(data["token"]).split("|")[1]
+    try:
+        conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="root", password="", host="127.0.0.1",port=3306,database = username) 
+    except mariadb.Error as e:       
+            print(f"Error connecting to MariaDB Platform: {e}")  
+            
+            return({"Info":"unauthorized",
+                    "msg":{e}})
+    
+    cur = conn.cursor()
 
-        try:
-            conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
-            #conn = mariadb.connect(user="root", password="", host="127.0.0.1",port=3306,database = username) 
-        except mariadb.Error as e:       
-             print(f"Error connecting to MariaDB Platform: {e}")  
-             
-             return({"Info":"unauthorized",
-                     "msg":{e}})
+    print(data)
+    
+    baseQuary = "select * from "
+    
+    if data["option"] == "Accounts":
+        baseQuary = baseQuary +" listhisab "
         
-        cur = conn.cursor()
+        baseQuary = baseQuary +" WHERE accno not like '%ALLDATA%' "
+        if data["value"] != "":
+            baseQuary = baseQuary + f"""  and (accname LIKE '{data["value"]}%' or accname LIKE '%{data["value"]}' or accname LIKE '%{data["value"]}%' or accno LIKE '{data["value"]}%' or accno LIKE '%{data["value"]}' or accno LIKE '%{data["value"]}%' or tel LIKE '{data["value"]}%' or tel LIKE '%{data["value"]}' or tel LIKE '%{data["value"]}%')  """
+    
+    if data["option"] == "Items":
+        baseQuary = baseQuary +" goods "
+        
+        baseQuary = baseQuary +" WHERE itemno not like '%ALLDATA%' "
+        if data["value"] != "":
+            baseQuary = baseQuary + f"""  and (itemname LIKE '{data["value"]}%' or itemname LIKE '%{data["value"]}' or itemname LIKE '%{data["value"]}%' or itemno LIKE '{data["value"]}%' or itemno LIKE '%{data["value"]}' or itemno LIKE '%{data["value"]}%' or itemname2 LIKE '{data["value"]}%' or itemname2 LIKE '%{data["value"]}' or itemname2 LIKE '%{data["value"]}%')  """
+            
+    baseQuary = baseQuary + " limit 100 "
+    print(baseQuary)
+    cur.execute(baseQuary)
+    r = list(cur)
+    
+    return{
+        "Info":"authorized",
+        "opp":r
+    }
+        
+        
+        
+        
+        
+        
+# @app.get("/moh/{uid}/login/")
+# async def logintoken(uid:str):
+#     val = checkList(uid)
+#     if val == "unauthorized":
+#         return{"Info":"unauthorized"}
 
-        print(data)
-        
-        baseQuary = "select * from "
-        
-        if data["option"] == "Accounts":
-            baseQuary = baseQuary +" listhisab "
-           
-            baseQuary = baseQuary +" WHERE accno not like '%ALLDATA%' "
-            if data["value"] != "":
-                baseQuary = baseQuary + f"""  and (accname LIKE '{data["value"]}%' or accname LIKE '%{data["value"]}' or accname LIKE '%{data["value"]}%' or accno LIKE '{data["value"]}%' or accno LIKE '%{data["value"]}' or accno LIKE '%{data["value"]}%' or tel LIKE '{data["value"]}%' or tel LIKE '%{data["value"]}' or tel LIKE '%{data["value"]}%')  """
-       
-        if data["option"] == "Items":
-            baseQuary = baseQuary +" goods "
-           
-            baseQuary = baseQuary +" WHERE itemno not like '%ALLDATA%' "
-            if data["value"] != "":
-               baseQuary = baseQuary + f"""  and (itemname LIKE '{data["value"]}%' or itemname LIKE '%{data["value"]}' or itemname LIKE '%{data["value"]}%' or itemno LIKE '{data["value"]}%' or itemno LIKE '%{data["value"]}' or itemno LIKE '%{data["value"]}%' or itemname2 LIKE '{data["value"]}%' or itemname2 LIKE '%{data["value"]}' or itemname2 LIKE '%{data["value"]}%')  """
-                
-        baseQuary = baseQuary + " limit 100 "
-        print(baseQuary)
-        cur.execute(baseQuary)
-        r = list(cur)
-        
-        return{
-           "Info":"authorized",
-            "opp":r
-        }
-        
-        
-        
-        
-        
-        
-@app.get("/moh/{uid}/login/")
-async def logintoken(uid:str):
-    val = checkList(uid)
-    if val == "unauthorized":
-        return{"Info":"unauthorized"}
-
-    elif val.split("|")[0] == "authorized":
-        compname = val.split("|")[1]
-        username = val.split("|")[2]
-        return{
-                "Info":"authorized",
-                "compname":compname,
-                "name":username,
-                    }
+#     elif val.split("|")[0] == "authorized":
+#         compname = val.split("|")[1]
+#         username = val.split("|")[2]
+#         return{
+#                 "Info":"authorized",
+#                 "compname":compname,
+#                 "name":username,
+#                     }
 
 @app.get("/moh/{uid}/Accounting/{limit}/",status_code=200)
 async def Accounting(uid:str,limit:int):
@@ -365,6 +353,8 @@ async def accFilter(data:dict,limit):
     # elif checkList(data["token"]).split("|")[0] == "authorized":
     #     username = checkList(data["token"]).split("|")[1]
     username = data["username"]
+    
+
     try:
             conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
     except mariadb.Error as e:       
@@ -381,7 +371,7 @@ async def accFilter(data:dict,limit):
     branches = []
     mydata = data["data"]["data"]
     filters = data["data"]["filters"]
-
+    
     if mydata["branch"]:
         vdepdetail = " , D.Dep "
     else:
@@ -412,15 +402,16 @@ LEFT JOIN (
 ) ld ON lh.AccNo = ld.AccNo
 WHERE 
     lh.AccNo IS NOT NULL """
-
+   
     elif mydata["branch"]:
         prefixWithWithoutBranch="ld."
         if mydata["selectedBranch"] == "Any":
             #baseQuary = "SELECT * FROM hisabbr WHERE AccNo IS NOT NULL "
             baseQuary="""SELECT SUM(ld.DB - ld.CR) AS Balance, ld.Dep,SUM(ld.DB),SUM(ld.CR),lh.* FROM listdaily ld LEFT JOIN( SELECT * FROM listhisab) lh ON ld.AccNo = lh.AccNo WHERE ld.AccNo IS NOT NULL """
-        elif mydata["selectedBranch"] == "-":
+        elif mydata["selectedBranch"] == "":
             #baseQuary = "SELECT * FROM hisabbr WHERE AccNo IS NOT NULL "
-            baseQuary="""SELECT SUM(ld.DB - ld.CR) AS Balance, ld.Dep,SUM(ld.DB),SUM(ld.CR),lh.* FROM listdaily ld LEFT JOIN( SELECT * FROM listhisab) lh ON ld.AccNo = lh.AccNo WHERE ld.AccNo IS NOT NULL AND ld.Dep='None' """
+            print("SALAM ALEKOM")
+            baseQuary="""SELECT SUM(ld.DB - ld.CR) AS Balance, ld.Dep,SUM(ld.DB),SUM(ld.CR),lh.* FROM listdaily ld LEFT JOIN( SELECT * FROM listhisab) lh ON ld.AccNo = lh.AccNo WHERE ld.AccNo IS NOT NULL AND ld.Dep IS NULL """
         else:
             #baseQuary = f"SELECT * FROM hisabbr WHERE Branch = \'{mydata['selectedBranch']}\' "
             baseQuary=f"""SELECT SUM(ld.DB - ld.CR) AS Balance, ld.Dep,SUM(ld.DB),SUM(ld.CR),lh.* FROM listdaily ld LEFT JOIN( SELECT * FROM listhisab) lh ON ld.AccNo = lh.AccNo WHERE ld.AccNo IS NOT NULL AND ld.Dep={mydata['selectedBranch']} """
@@ -435,8 +426,7 @@ WHERE
     for f in filters:
         if mydata["branch"]:
             if f['name']!="Balance":
-                print(f['name'])
-                print("kkkkkkkk")
+                
                 fullyName="ld."+f['name']
             else:
                 fullyName=f['name']
@@ -475,7 +465,7 @@ WHERE
             baseQuary = baseQuary + str(f"GROUP BY ld.AccNo,ld.Dep;")
         else:
             baseQuary = baseQuary + str(f"GROUP BY lh.AccNo;")
-    print("//////////////////")
+    
     print(baseQuary)
     cur.execute(baseQuary)
     
@@ -779,20 +769,16 @@ async def StockStatementFilter(data:dict):
 
 @app.get("/moh/getBranches/{uid}/")
 async def getBranches(uid:str):
-    if checkList(uid) == "unauthorized":
-        return{"Info":"unauthorized"}
 
-    elif checkList(uid).split("|")[0] == "authorized":
-        username = checkList(uid).split("|")[1]
-
-        try:
-            conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
-            #conn = mariadb.connect(user="root", password="", host="127.0.0.1",port=3306,database = username) 
-        except mariadb.Error as e:       
-             print(f"Error connecting to MariaDB Platform: {e}")  
-             
-             return({"Info":"unauthorized",
-                     "msg":{e}})
+    username=uid
+    try:
+        conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="root", password="", host="127.0.0.1",port=3306,database = username) 
+    except mariadb.Error as e:       
+            print(f"Error connecting to MariaDB Platform: {e}")  
+            
+            return({"Info":"unauthorized",
+                    "msg":{e}})
         
     cur = conn.cursor()
     cur.execute("SELECT DISTINCT `BR`,`BRName` FROM `goodsqty` WHERE br is not null and brname is not null order by br asc;")   
@@ -1090,31 +1076,32 @@ async def AccStatement(uid:str ,id:str):
 
 @app.get("/moh/{uid}/Accounting/Double/{type}/{number}/",status_code=200)
 async def StockStatement(uid:str, type:str, number:str):
-    if checkList(uid) == "unauthorized":
-        return{"Info":"unauthorized"}
+    username = uid
+    
 
-    elif checkList(uid).split("|")[0] == "authorized":
-        username = checkList(uid).split("|")[1]
-
-        try:
-             conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
-            #conn = mariadb.connect(user="root", password="", host="127.0.0.1",port=3306,database = username) 
-        except mariadb.Error as e:       
-             print(f"Error connecting to MariaDB Platform: {e}")  
-             response.status_code = status.HTTP_401_UNAUTHORIZED
-             return({"Info":"unauthorized",
+    try:
+        conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username)
+             
+    except mariadb.Error as e:       
+        print(f"Error connecting to MariaDB Platform: {e}")  
+        response.status_code = status.HTTP_401_UNAUTHORIZED
+            
+        return({"Info":"unauthorized",
                      "msg":{e}})
         
-        cur = conn.cursor()
+    cur = conn.cursor()
+
+    cur.execute(f"SELECT * FROM `goodstrans` WHERE RefNo = '{number}'")
+
+      
+
         
-        cur.execute(f"SELECT * FROM `goodstrans` WHERE RefType = '{type}' AND RefNo = '{number}'")
-        double = []
-        ind = 0
-        for x in cur:
-           
-            double.append({     
+    double = []
+    ind = 0
+    for x in cur:
+        double.append({     
             "key":ind,                 
-            "RefType" :x[0] ,  
+            "RefType" :x[0],  
             "RefNo" :x[1],    
             "TDate":x[2],   
             "LN" :x[3],
@@ -1134,13 +1121,13 @@ async def StockStatement(uid:str, type:str, number:str):
             "Disc100":x[17],
             "AccName":x[18],
             "ItemName":x[19],
-            })
-            ind = ind +1
+        })
+        ind = ind +1
 
-        return{
+    return{
         "Info":"authorized",
         "double":double,
-        }
+    }
 
 
 
@@ -1723,66 +1710,57 @@ async def StockBranch(uid:str, id:str):
 
 @app.get("/moh/{uid}/Stock/Double/{type}/{number}/",status_code=200)
 async def StockStatement(uid:str, type:str, number:str):
-    if checkList(uid) == "unauthorized":
-        return{"Info":"unauthorized"}
 
-    elif checkList(uid).split("|")[0] == "authorized":
-        username = checkList(uid).split("|")[1]
-
-        try:
-             conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
-            #conn = mariadb.connect(user="root", password="", host="127.0.0.1",port=3306,database = username) 
-        except mariadb.Error as e:       
-             print(f"Error connecting to MariaDB Platform: {e}")  
-             response.status_code = status.HTTP_401_UNAUTHORIZED
-             return({"Info":"unauthorized",
-                     "msg":{e}})
+    username=uid
+    try:
+            conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="root", password="", host="127.0.0.1",port=3306,database = username) 
+    except mariadb.Error as e:       
+            print(f"Error connecting to MariaDB Platform: {e}")  
+            response.status_code = status.HTTP_401_UNAUTHORIZED
+            return({"Info":"unauthorized",
+                    "msg":{e}})
+    
+    cur = conn.cursor()
+    
+    cur.execute(f"SELECT * FROM `goodstrans` WHERE RefType = '{type}' AND RefNo = '{number}' limit 300")
+    double = []
+    ind = 0
+    for x in cur:
         
-        cur = conn.cursor()
-        
-        cur.execute(f"SELECT * FROM `goodstrans` WHERE RefType = '{type}' AND RefNo = '{number}' limit 300")
-        double = []
-        ind = 0
-        for x in cur:
-           
-            double.append({     
-            "key":ind,                 
-            "RefType" :x[0] ,  
-            "RefNo" :x[1],    
-            "TDate":x[2],   
-            "LN" :x[3],
-            "ItemNo" :x[4],
-            "Branch" :x[5],
-            "PQty" :x[6],
-            "Qty" :x[7],
-            "UPrice" :x[8],
-            "UFob" :x[9],
-            "PQUnit" :x[10],
-            "Disc" :x[11],
-            "Weight" :x[12],
-            "Notes" :x[13],
-            "Tax":x[14],
-            "Total" :x[15],
-            "AccNo" :x[16],
-            "Disc100":x[17],
-            "AccName":x[18],
-            "ItemName":x[19],
-            })
-            ind = ind +1
+        double.append({     
+        "key":ind,                 
+        "RefType" :x[0] ,  
+        "RefNo" :x[1],    
+        "TDate":x[2],   
+        "LN" :x[3],
+        "ItemNo" :x[4],
+        "Branch" :x[5],
+        "PQty" :x[6],
+        "Qty" :x[7],
+        "UPrice" :x[8],
+        "UFob" :x[9],
+        "PQUnit" :x[10],
+        "Disc" :x[11],
+        "Weight" :x[12],
+        "Notes" :x[13],
+        "Tax":x[14],
+        "Total" :x[15],
+        "AccNo" :x[16],
+        "Disc100":x[17],
+        "AccName":x[18],
+        "ItemName":x[19],
+        })
+        ind = ind +1
 
-        return{
-        "Info":"authorized",
-        "double":double,
-        }
+    return{
+    "Info":"authorized",
+    "double":double,
+    }
 
 @app.post("/moh/newInvoice/")
 async def newInvoice(data:dict):
-    if checkList(data["token"]) == "unauthorized":
-        return{"Info":"unauthorized"}
-
-    elif checkList(data["token"]).split("|")[0] == "authorized":
-        username = checkList(data["token"]).split("|")[1]
-
+    username = data["compname"]
     try:
             conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
         #conn = mariadb.connect(user="root", password="", host="127.0.0.1",port=3306,database = username) 
