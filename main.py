@@ -1155,12 +1155,12 @@ async def Stock(uid:str,limit:int):
     
     cur = conn.cursor()
     
-    cur.execute(f"SELECT * FROM goods limit {limit}")
+    cur.execute(f"SELECT go.*,gt.totalQty,gt.Branch FROM goods go LEFT JOIN (SELECT SUM(Qin - Qout) AS totalQty, ItemNo,Branch FROM goodstrans GROUP BY ItemNo,Branch) gt ON go.ItemNo = gt.ItemNo limit {limit};")
     qstock = list(cur)
    
     goods = []
     ind = 0
-    cur.execute("SELECT DISTINCT `BR`,`BRName` FROM `goodsqty` WHERE br is not null and brname is not null order by br asc ;")
+    cur.execute("SELECT DISTINCT `Branch`,Branch FROM `goodstrans` WHERE Branch is not null order by Branch asc ;")
 
 
 
@@ -1218,8 +1218,9 @@ async def Stock(uid:str,limit:int):
         "PUnit" :x[26],
         "PQUnit" :x[27],
         "SPUnit" :x[28],
-        "Qty":qty,
-        "branch":list(qbranch),
+        "Qty":x[30],
+        "branch":list(x[31]),
+        
         })
         ind = ind +1
     cur.execute(f"""
@@ -1351,6 +1352,7 @@ async def stockFilter(data:dict,limit):
             qty = 0
         else :
             qty = float(x[29])
+    
         goods.append({     
             "key":ind,                 
         "ItemNo" :x[0 + ff] ,  
