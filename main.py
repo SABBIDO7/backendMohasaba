@@ -1250,15 +1250,15 @@ async def stockFilter(data:dict,limit):
     baseQuary = ""
     ff = 0
     if not mydata["branch"]:
-        baseQuary = f"SELECT go.*,gt.totalQty,gt.Branch FROM goods go LEFT JOIN (SELECT SUM(Qin - Qout) AS totalQty, ItemNo,Branch FROM goodstrans GROUP BY ItemNo) gt ON go.ItemNo = gt.ItemNo "
+        baseQuary = f"SELECT go.*,gt.qty,gt.Branch FROM goods go LEFT JOIN (SELECT SUM(Qin - Qout) AS qty, ItemNo,Branch FROM goodstrans GROUP BY ItemNo) gt ON go.ItemNo = gt.ItemNo WHERE go.ItemNo IS NOT NULL "
         #baseQuary = "SELECT * FROM goods WHERE itemno IS NOT NULL "
     elif mydata["branch"]:
         ff = 4
         if mydata["selectedBranch"] == "Any":
-            baseQuary = f"SELECT go.*,gt.totalQty,gt.Branch FROM goods go LEFT JOIN (SELECT SUM(Qin - Qout) AS totalQty, ItemNo,Branch FROM goodstrans GROUP BY ItemNo,Branch) gt ON go.ItemNo = gt.ItemNo "
+            baseQuary = f"SELECT go.*,gt.qty,gt.Branch FROM goods go LEFT JOIN (SELECT SUM(Qin - Qout) AS qty, ItemNo,Branch FROM goodstrans GROUP BY ItemNo,Branch) gt ON go.ItemNo = gt.ItemNo WHERE go.ItemNo IS NOT NULL "
             #baseQuary = "select * from goodsbr WHERE itemno IS NOT NULL "
         else:
-            baseQuary = f"SELECT go.*,gt.totalQty,gt.Branch FROM goods go LEFT JOIN (SELECT SUM(Qin - Qout) AS totalQty, ItemNo,Branch FROM goodstrans WHERE Branch = {mydata['selectedBranch']} GROUP BY ItemNo,Branch) gt ON go.ItemNo = gt.ItemNo "
+            baseQuary = f"SELECT go.*,gt.qty,gt.Branch FROM goods go LEFT JOIN (SELECT SUM(Qin - Qout) AS qty, ItemNo,Branch FROM goodstrans WHERE Branch = {mydata['selectedBranch']} GROUP BY ItemNo,Branch) gt ON go.ItemNo = gt.ItemNo WHERE go.ItemNo IS NOT NULL "
             #baseQuary = f"select * from goodsbr WHERE br = \'{mydata['selectedBranch']}\' "
     fullyName='go.'
     if mydata["vAny"] != "":
@@ -1267,7 +1267,11 @@ async def stockFilter(data:dict,limit):
         elif mydata["sAny"] == "Contains":
             baseQuary = baseQuary + str(f"AND ( {fullyName}ItemNo like \'%{mydata['vAny']}%\' OR  {fullyName}ItemNo like \'{mydata['vAny']}%\' OR  {fullyName}ItemNo like \'%{mydata['vAny']}\' OR {fullyName}MainNo like \'%{mydata['vAny']}%\'  OR {fullyName}MainNo like \'{mydata['vAny']}%\'  OR {fullyName}MainNo like \'%{mydata['vAny']}\' OR {fullyName}ItemName like \'%{mydata['vAny']}%\'  OR {fullyName}ItemName like \'{mydata['vAny']}%\'  OR {fullyName}ItemName like \'%{mydata['vAny']}\' OR {fullyName}ItemName2 like \'%{mydata['vAny']}%\'  OR {fullyName}ItemName2 like \'%{mydata['vAny']}\'  OR {fullyName}ItemName2 like \'{mydata['vAny']}%\' ) ")
     for f in filters:
+        
         if f["value"] != "":
+            fullyName='go.'
+            if f['name'] == "qty":
+                fullyName = 'gt.'
             if f["type"] == "Start":
                 baseQuary = baseQuary + str(f" AND {fullyName}{f['name']} like \'{f['value']}%\' ")
             elif f["type"] == "Contains":
@@ -1293,55 +1297,44 @@ async def stockFilter(data:dict,limit):
     qstock = list(cur)
     goods = []
     ind = 0
-    cur.execute(f"SELECT DISTINCT ItemNo,Branch FROM goodstrans")
-    for x in qstock:
-        qty = 0
-        try:
-            cur.execute(f"SELECT * FROM `goodsqty` WHERE `ItemNo` = '{x[0]}'; ")
-            qbranch = list(cur)
-        except:
-            qbranch = []
-        if x[29] == None or x[29] == "" or x[29] == '\r':
-            qty = 0
-        else :
-            qty = float(x[29])
-    
-        goods.append({     
-            "key":ind,                 
-        "ItemNo" :x[0 + ff] ,  
-        "ItemName" :x[1 + ff],    
-        "ItemName2":x[2 + ff],   
-        "MainNo" :x[3 + ff],
-        "SetG" :x[4 + ff],
-        "Category" :x[5 + ff],
-        "Unit" :x[6 + ff],
-        "Brand" :x[7 + ff],
-        "Origin" :x[8 + ff],
-        "Supplier" :x[9 + ff],
-        "Sizeg" :x[10 + ff],
-        "Color" :x[11 + ff],
-        "Family" :x[12 + ff],
-        "Groupg" :x[13 + ff],
-        "Tax":x[14 + ff],
-        "SPrice1" :x[15 + ff],
-        "SPrice2" :x[16 + ff],
-        "SPrice3" :x[17 + ff],
-        "Disc1" :x[18 + ff],
-        "Disc2" :x[19 + ff],
-        "Disc3" :x[20 + ff],
-        "CostPrice":x[21 + ff] ,
-        "FobCost" :x[22 + ff],
-        "AvPrice" :x[23 + ff],
-        "BPUnit" :x[24 + ff],
-        "PQty" :x[25 + ff],
-        "PUnit" :x[26 + ff],
-        "PQUnit" :x[27 + ff],
-        "SPUnit" :x[28 + ff],
-        "Qty":qty,
-        "branch":list(qbranch),
-        })
-        ind = ind +1
-        
+    if not mydata["branch"]:
+        for x in qstock:
+            goods.append({     
+                "key":ind,                 
+            "ItemNo" :x[0] ,  
+            "ItemName" :x[1],    
+            "ItemName2":x[2],   
+            "MainNo" :x[3],
+            "SetG" :x[4],
+            "Category" :x[5],
+            "Unit" :x[6],
+            "Brand" :x[7],
+            "Origin" :x[8],
+            "Supplier" :x[9],
+            "Sizeg" :x[10],
+            "Color" :x[11],
+            "Family" :x[12],
+            "Groupg" :x[13],
+            "Tax":x[14],
+            "SPrice1" :x[15],
+            "SPrice2" :x[16],
+            "SPrice3" :x[17],
+            "Disc1" :x[18],
+            "Disc2" :x[19],
+            "Disc3" :x[20],
+            "CostPrice":x[21] ,
+            "FobCost" :x[22],
+            "AvPrice" :x[23],
+            "BPUnit" :x[24],
+            "PQty" :x[25],
+            "PUnit" :x[26],
+            "PQUnit" :x[27],
+            "SPUnit" :x[28],
+            "Qty":x[30],
+            "branch":x[31],
+            })
+            ind = ind +1
+            
 
    
     bStock = []
@@ -1350,47 +1343,61 @@ async def stockFilter(data:dict,limit):
         for x in qstock :
             bStock.append({
             "key":ukey,
-            "BR" :x[1],    
+            "BR" :x[31],    
             "BRName":x[2],   
-            "Qty" :x[3],
-            "ItemNo" :x[4],
-            "ItemName" :x[5],
-            "ItemName2" :x[6],
-            "MainNo" :x[7],
-            "SetG" :x[8],
-            "Category" :x[9],
-            "Unit" :x[10],
-            "Brand" :x[11],
-            "Origin" :x[12],
-            "Supplier" :x[13],
-            "Sizeg":x[14],
-            "Color" :x[15],
-            "Family" :x[16],
-            "Groupg" :x[17],
-            "Tax" :x[18],
-            "SPrice1" :x[19],
-            "SPrice2" :x[20],
-            "SPrice3":x[21] ,
-            "Disc1" :x[22],
-            "Disc2" :x[23],
-            "Disc3" :x[24],
-            "CostPrice" :x[25],
-            "FobCost" :x[26],
-            "AvPrice" :x[27],
-            "BPUnit" :x[28],
-            "PQty" :x[29],
-            "PUnit" :x[30],
-            "PQUnit" :x[31],
-            "SPUnit" :x[31],
+            "Qty" :x[30],
+            "ItemNo" :x[0],
+            "ItemName" :x[1],
+            "ItemName2" :x[2],
+            "MainNo" :x[3],
+            "SetG" :x[4],
+            "Category" :x[5],
+            "Unit" :x[6],
+            "Brand" :x[7],
+            "Origin" :x[8],
+            "Supplier" :x[9],
+            "Sizeg":x[10],
+            "Color" :x[11],
+            "Family" :x[12],
+            "Groupg" :x[13],
+            "Tax" :x[14],
+            "SPrice1" :x[15],
+            "SPrice2" :x[16],
+            "SPrice3":x[17] ,
+            "Disc1" :x[18],
+            "Disc2" :x[19],
+            "Disc3" :x[20],
+            "CostPrice" :x[21],
+            "FobCost" :x[22],
+            "AvPrice" :x[23],
+            "BPUnit" :x[24],
+            "PQty" :x[25],
+            "PUnit" :x[26],
+            "PQUnit" :x[27],
+            "SPUnit" :x[28],
             })
             ukey = ukey + 1
+    cur.execute("SELECT DISTINCT `Branch`,Branch FROM `goodstrans` WHERE Branch is not null order by Branch asc ;")
 
-    
-    
+
+
+    branches = []
+    branches.append({
+        "key":"Any",
+        "split":"",
+        "val":"",
+    })
+    for l in cur:
+        branches.append({
+            "key":l[0],
+            "split":" - ",
+            "val":l[1],
+        })
     return{
         "Info":"authorized",
         "stock":goods,
         "branchStock": bStock,
+        "branches" : branches
     }
     
 
