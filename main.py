@@ -115,7 +115,7 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
     #     userlist = info2.readlines()
     
     try:
-            conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = "python") 
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = "python") 
     except mariadb.Error as e:       
             print(f"Error connecting to MariaDB Platform: {e}")  
             return {"Info":"unauthorized",
@@ -154,8 +154,8 @@ async def getAccounts(data:dict):
     username=data["username"]
 
     try:
-        conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
-        #conn = mariadb.connect(user="root", password="", host="127.0.0.1",port=3306,database = username) 
+        conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
     except mariadb.Error as e:       
             print(f"Error connecting to MariaDB Platform: {e}")  
             
@@ -222,9 +222,9 @@ async def Accounting(uid:str,limit:int):
     username=uid
     print(username)
     try:
-        conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
-        conn2 = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
-        #conn = mariadb.connect(user="root", password="", host="127.0.0.1",port=3306,database = username) 
+        conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        conn2 = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
     except mariadb.Error as e:       
             print(f"Error connecting to MariaDB Platform: {e}")  
             
@@ -259,7 +259,7 @@ LEFT JOIN (
    
 ) ld ON lh.AccNo = ld.AccNo
 WHERE 
-    lh.AccNo IS NOT NULL AND lh.Balance>0 limit {limit}""") #honn
+    lh.AccNo IS NOT NULL AND ld.balance>0 limit {limit}""") #honn
     hisab = []
     ind = 0
     for x in cur:
@@ -279,7 +279,7 @@ WHERE
             "AccNo":x[0],
             "AccName":x[1],
             "Cur":x[2],
-            "Balance":x[17],
+            "Balance":x[14],
             "set":x[6],
             "category":x[7],
             "Price":x[8],
@@ -288,8 +288,8 @@ WHERE
             "Address":x[12],
             "tel":x[13],
             "Mobile":x[14],
-            "AccName2":x[15],
-            "Fax":x[16],
+            "AccName2":x[12],
+            "Fax":x[13],
         })
         ind = ind +1
 
@@ -356,7 +356,7 @@ async def accFilter(data:dict,limit):
     
 
     try:
-            conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
     except mariadb.Error as e:       
             print(f"Error connecting to MariaDB Platform: {e}")  
             response.status_code = status.HTTP_409_CONFLICT
@@ -563,8 +563,8 @@ async def StockStatement(uid:str, id:str, limit:int):
     #     username = checkList(uid).split("|")[1]
     username=uid
     try:
-            conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
-        #conn = mariadb.connect(user="root", password="", host="127.0.0.1",port=3306,database = username) 
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
     except mariadb.Error as e:       
             print(f"Error connecting to MariaDB Platform: {e}")  
             response.status_code = status.HTTP_401_UNAUTHORIZED
@@ -664,8 +664,8 @@ async def StockStatementFilter(data:dict):
     username=data["username"]
     print("hola")
     try:
-            conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
-        #conn = mariadb.connect(user="root", password="", host="127.0.0.1",port=3306,database = username) 
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
     except mariadb.Error as e:       
             print(f"Error connecting to MariaDB Platform: {e}")  
             response.status_code = status.HTTP_401_UNAUTHORIZED
@@ -772,8 +772,8 @@ async def getBranches(uid:str):
 
     username=uid
     try:
-        conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
-        #conn = mariadb.connect(user="root", password="", host="127.0.0.1",port=3306,database = username) 
+        conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
     except mariadb.Error as e:       
             print(f"Error connecting to MariaDB Platform: {e}")  
             
@@ -812,8 +812,8 @@ async def AccStatement(uid:str ,id:str,limit:int):
     #     username = checkList(uid).split("|")[1]
     username=uid
     try:
-            conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
-        #conn = mariadb.connect(user="root", password="", host="127.0.0.1",port=3306,database = username) 
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
     except mariadb.Error as e:       
             print(f"Error connecting to MariaDB Platform: {e}")  
             response.status_code = status.HTTP_409_CONFLICT
@@ -914,8 +914,8 @@ async def AccStatementFilter(data:dict):
     print("blaaaaaaaaaaaaaaaaaaaaaaa")
     username = data["username"]
     try:
-        conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
-        #conn = mariadb.connect(user="root", password="", host="127.0.0.1",port=3306,database = username) 
+        conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
     except mariadb.Error as e:       
         print(f"Error connecting to MariaDB Platform: {e}")  
         response.status_code = status.HTTP_409_CONFLICT
@@ -1038,8 +1038,8 @@ async def AccStatement(uid:str ,id:str):
     #     username = checkList(uid).split("|")[1]
     username=uid
     try:
-            conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
-        #conn = mariadb.connect(user="root", password="", host="127.0.0.1",port=3306,database = username) 
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
     except mariadb.Error as e:       
             print(f"Error connecting to MariaDB Platform: {e}")  
             response.status_code = status.HTTP_409_CONFLICT
@@ -1080,7 +1080,7 @@ async def StockStatement(uid:str, type:str, number:str):
     
 
     try:
-        conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username)
+        conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username)
              
     except mariadb.Error as e:       
         print(f"Error connecting to MariaDB Platform: {e}")  
@@ -1091,7 +1091,7 @@ async def StockStatement(uid:str, type:str, number:str):
         
     cur = conn.cursor()
 
-    cur.execute(f"SELECT * FROM `goodstrans` WHERE RefNo = '{number}'")
+    cur.execute(f"SELECT * FROM `goodstrans` WHERE RefType = '{type}' AND RefNo = {number} ORDER BY LN")
 
       
 
@@ -1129,6 +1129,63 @@ async def StockStatement(uid:str, type:str, number:str):
         "double":double,
     }
 
+@app.get("/moh/{uid}/Accounting/Summery/{id}/",status_code=200)
+async def AccountingBranch(uid:str, id:str):
+    # if checkList(uid) == "unauthorized":
+    #     return{"Info":"unauthorized"}
+
+    # elif checkList(uid).split("|")[0] == "authorized":
+    #     username = checkList(uid).split("|")[1]
+    username=uid
+    try:
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+    except mariadb.Error as e:       
+            print(f"Error connecting to MariaDB Platform: {e}")  
+            response.status_code = status.HTTP_401_UNAUTHORIZED
+            return({"Info":"unauthorized",
+                    "msg":{e}})
+    
+    cur = conn.cursor()
+    if id =="ALLDATA":
+         cur.execute(f"""SELECT LEFT(ld.RefType, 2) AS RType,ld.AccNo,lh.Name,ld.Dep AS BR, SUM(DB) AS DB, SUM(CR) AS CR, SUM(DB - CR) AS Balance
+FROM 
+    listdaily 
+    ld LEFT JOIN (SELECT AccNo,AccName AS Name FROM listhisab GROUP BY AccNo) lh ON lh.AccNo = ld.AccNo
+GROUP BY
+    RType,
+    ld.AccNo,
+    BR;""")
+    else:
+        cur.execute(f"""    SELECT LEFT(ld.RefType, 2) AS RType,ld.AccNo,lh.Name,ld.Dep AS BR, SUM(DB) AS DB, SUM(CR) AS CR, SUM(DB - CR) AS Balance
+FROM 
+    listdaily 
+    ld LEFT JOIN (SELECT AccNo,AccName AS Name FROM listhisab GROUP BY AccNo) lh ON lh.AccNo = ld.AccNo
+WHERE ld.AccNo = '{id}'
+GROUP BY
+    RType,
+    ld.AccNo,
+    BR;""")
+    summery = []
+    ind = 0
+    for x in cur:          
+        summery.append({     
+        "key":ind,                 
+        "ItemNo" :x[0],  
+        "Branch" :x[1], 
+        "InvType":x[2],
+        "Qty":x[3], 
+        "Total":x[4], 
+        "Tax":x[5], 
+        })
+        ind = ind +1
+
+    
+    return{
+    "Info":"authorized",
+    "summery":summery
+    }
+
+
 
 
 
@@ -1145,8 +1202,8 @@ async def Stock(uid:str,limit:int):
     #     username = checkList(uid).split("|")[1]
     username=uid
     try:
-            conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
-        #conn = mariadb.connect(user="root", password="", host="127.0.0.1",port=3306,database = username) 
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
     except mariadb.Error as e:       
             print(f"Error connecting to MariaDB Platform: {e}")  
             response.status_code = status.HTTP_401_UNAUTHORIZED
@@ -1235,7 +1292,7 @@ async def stockFilter(data:dict,limit):
     #     username = checkList(data["token"]).split("|")[1]
     username = data["username"]
     try:
-            conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
     except mariadb.Error as e:       
             print(f"Error connecting to MariaDB Platform: {e}")  
             response.status_code = status.HTTP_409_CONFLICT
@@ -1410,8 +1467,8 @@ async def StockStatement(uid:str, id:str,limit:int):
     #     username = checkList(uid).split("|")[1]
     username=uid
     try:
-            conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
-        #conn = mariadb.connect(user="root", password="", host="127.0.0.1",port=3306,database = username) 
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
     except mariadb.Error as e:       
             print(f"Error connecting to MariaDB Platform: {e}")  
             response.status_code = status.HTTP_401_UNAUTHORIZED
@@ -1479,12 +1536,15 @@ async def StockStatement(uid:str, id:str,limit:int):
     distype.append({"value":"Receipt V","label":"Receipt V"})
     distype.append({"value":"Payment V","label":"Payment V"})
     distype.append({"value":"Journal  V","label":"Journal  V"})
+
     return{
     "Info":"authorized",
     "stock":stock,
     "disType":distype,
     "dbr":dbr,
     }
+
+    
 
 
 @app.post("/moh/Stock/Statement/Filter/",status_code=200)
@@ -1496,8 +1556,8 @@ async def StockStatementFilter(data:dict):
     #     username = checkList(data["token"]).split("|")[1]
     username=data["username"]
     try:
-            conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
-        #conn = mariadb.connect(user="root", password="", host="127.0.0.1",port=3306,database = username) 
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
     except mariadb.Error as e:       
             print(f"Error connecting to MariaDB Platform: {e}")  
             response.status_code = status.HTTP_401_UNAUTHORIZED
@@ -1601,7 +1661,7 @@ async def StockBranch(uid:str, id:str):
     #     username = checkList(uid).split("|")[1]
     username=uid
     try:
-            conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
     except mariadb.Error as e:       
             print(f"Error connecting to MariaDB Platform: {e}")  
             response.status_code = status.HTTP_401_UNAUTHORIZED
@@ -1639,7 +1699,7 @@ async def StockBranch(uid:str, id:str):
     #     username = checkList(uid).split("|")[1]
     username=uid
     try:
-            conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
     except mariadb.Error as e:       
             print(f"Error connecting to MariaDB Platform: {e}")  
             response.status_code = status.HTTP_401_UNAUTHORIZED
@@ -1647,8 +1707,44 @@ async def StockBranch(uid:str, id:str):
                     "msg":{e}})
     
     cur = conn.cursor()
+    if id =="ALLDATA":
+         cur.execute(f"""SELECT 
+		ItemNo,Branch AS BR,
+    CASE 
+        WHEN LEFT(RefType, 3) = 'SAT' THEN LEFT(RefType, 3)
+        ELSE LEFT(RefType, 2)
+    END AS RType,
+    SUM(QTY) AS Qty,
+    SUM(Total) AS Total,
+    SUM((TAX/100)*Total) AS Tax
     
-    cur.execute(f"SELECT * FROM `goodssummery` WHERE `ItemNo` = '{id}'; ")
+   
+FROM 
+    goodstrans 
+GROUP BY 
+    RType,
+    
+    Branch;""")
+    else:
+        cur.execute(f"""SELECT 
+            ItemNo,Branch AS BR,
+        CASE 
+            WHEN LEFT(RefType, 3) = 'SAT' THEN LEFT(RefType, 3)
+            ELSE LEFT(RefType, 2)
+        END AS RType,
+        SUM(QTY) AS Qty,
+        SUM(Total) AS Total,
+        SUM((TAX/100)*Total) AS Tax
+        
+    
+    FROM 
+        goodstrans 
+    WHERE 
+        ItemNo = '{id}' 
+    GROUP BY 
+        RType,
+        ItemNo,
+        Branch;""")
     summery = []
     ind = 0
     for x in cur:          
@@ -1670,13 +1766,13 @@ async def StockBranch(uid:str, id:str):
     }
 
 
-@app.get("/moh/{uid}/Stock/Double/{type}/{number}/",status_code=200)
-async def StockStatement(uid:str, type:str, number:str):
+@app.get("/moh/{uid}/Stock/Double/{type}/{number}/{limit}",status_code=200)
+async def StockStatement(uid:str, type:str, number:str,limit:int):
 
     username=uid
     try:
-            conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
-        #conn = mariadb.connect(user="root", password="", host="127.0.0.1",port=3306,database = username) 
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
     except mariadb.Error as e:       
             print(f"Error connecting to MariaDB Platform: {e}")  
             response.status_code = status.HTTP_401_UNAUTHORIZED
@@ -1685,7 +1781,7 @@ async def StockStatement(uid:str, type:str, number:str):
     
     cur = conn.cursor()
     
-    cur.execute(f"SELECT * FROM `goodstrans` WHERE RefType = '{type}' AND RefNo = '{number}' limit 300")
+    cur.execute(f"SELECT * FROM `goodstrans` WHERE RefType = '{type}' AND RefNo = '{number}' ORDER BY LN limit {limit}")
     double = []
     ind = 0
     for x in cur:
@@ -1724,8 +1820,8 @@ async def StockStatement(uid:str, type:str, number:str):
 async def newInvoice(data:dict):
     username = data["compname"]
     try:
-            conn = mariadb.connect(user="root", password="Hkms0ft", host=dbHost,port=9988,database = username) 
-        #conn = mariadb.connect(user="root", password="", host="127.0.0.1",port=3306,database = username) 
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
     except mariadb.Error as e:       
             print(f"Error connecting to MariaDB Platform: {e}")  
             response.status_code = status.HTTP_401_UNAUTHORIZED
