@@ -294,13 +294,14 @@ WHERE
         ind = ind +1
 
 
-    cur.execute("SELECT DISTINCT `BR`,`BRName` FROM `goodsqty` WHERE br is not null and brname is not null order by br asc;")   
+    cur.execute("SELECT DISTINCT `Branch`,`Branch` FROM `goodstrans` WHERE Branch is not null order by Branch asc;")   
     branches = []
     branches.append({
         "key":"Any",
         "split":"",
         "val":"",
     })
+    #goodsqty
     for l in cur:
         branches.append({
             "key":l[0],
@@ -425,16 +426,18 @@ WHERE
             baseQuary = baseQuary + str(f" AND ( {prefixWithWithoutBranch+"AccNo"} like \'%{mydata['vAny']}%\' OR  {prefixWithWithoutBranch+"AccNo"} like \'{mydata['vAny']}%\' OR  {prefixWithWithoutBranch+"AccNo"} like \'%{mydata['vAny']}\' OR {prefixWithWithoutBranch +"AccName"} like \'%{mydata['vAny']}%\'  OR {prefixWithWithoutBranch +"AccName"} like \'{mydata['vAny']}%\'  OR {prefixWithWithoutBranch +"AccName"} like \'%{mydata['vAny']}\' OR {prefixWithWithoutBranch+"Contact"} like \'%{mydata['vAny']}%\'  OR {prefixWithWithoutBranch+"Contact"} like \'{mydata['vAny']}%\'  OR {prefixWithWithoutBranch+"Contact"} like \'%{mydata['vAny']}\' OR {prefixWithWithoutBranch +"Address"}  like \'%{mydata['vAny']}%\'  OR {prefixWithWithoutBranch +"Address"}  like \'{mydata['vAny']}%\'  OR {prefixWithWithoutBranch +"Address"}  like \'%{mydata['vAny']}\' OR {prefixWithWithoutBranch +"tel"} like \'%{mydata['vAny']}%\'  OR {prefixWithWithoutBranch +"tel"} like \'{mydata['vAny']}%\'  OR {prefixWithWithoutBranch +"tel"} like \'%{mydata['vAny']}\' OR {prefixWithWithoutBranch+"AccName2"} like \'%{mydata['vAny']}%\'  OR {prefixWithWithoutBranch+"AccName2"} like \'{mydata['vAny']}%\'  OR {prefixWithWithoutBranch+"AccName2"} like \'%{mydata['vAny']}\' OR {prefixWithWithoutBranch+"Fax"} like \'%{mydata['vAny']}%\' OR {prefixWithWithoutBranch+"Fax"} like \'{mydata['vAny']}%\' OR {prefixWithWithoutBranch+"Fax"} like \'%{mydata['vAny']}\' )  ")
     for f in filters:
         if mydata["branch"]:
+            
             if f['name']!="Balance":
                 
                 fullyName="ld."+f['name']
-            else:
-                fullyName=f['name']
+                print(fullyName)
+            elif f['name']=="Balance":
+                flag=1 #then i want to stop this iteration and enter in for loop and continue the next iteration
+                break
         else:
             fullyName="lh."+f['name']
         if f["value"] != "":
-            if f["type"] == "Start":
-                
+            if f["type"] == "Start":     
                 baseQuary = baseQuary + str(f" AND {fullyName} like \'{f['value']}%\' ")
             elif f["type"] == "Contains":
                 baseQuary = baseQuary + str(f" AND ({fullyName} like \'%{f['value']}%\' OR {fullyName} like \'{f['value']}%\' OR {fullyName} like \'%{f['value']}\')")
@@ -451,7 +454,7 @@ WHERE
             elif f["type"] == "<=":
                 baseQuary = baseQuary + str(f" AND {fullyName} <= \'{f['value']}\' ")
            
-    
+    #zabit hon having
     if limit != "All":
         if  mydata["branch"]:
              
@@ -781,9 +784,9 @@ async def getBranches(uid:str):
                     "msg":{e}})
         
     cur = conn.cursor()
-    cur.execute("SELECT DISTINCT `BR`,`BRName` FROM `goodsqty` WHERE br is not null and brname is not null order by br asc;")   
+    cur.execute("SELECT DISTINCT `Branch`,`Branch` FROM `goodstrans` WHERE Branch is not null order by Branch asc;")   
     branches = []
-    
+
     for br in cur:
         if br[0] != "":
             branches.append({
@@ -910,8 +913,7 @@ async def AccStatement(uid:str ,id:str,limit:int):
 async def AccStatementFilter(data:dict):
     # if checkList(data["token"]) == "unauthorized":
     #     return{"Info":"unauthorized"}
-    print(data)
-    print("blaaaaaaaaaaaaaaaaaaaaaaa")
+
     username = data["username"]
     try:
         conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
@@ -1268,7 +1270,7 @@ async def Stock(uid:str,limit:int):
         "PUnit" :x[26],
         "PQUnit" :x[27],
         "SPUnit" :x[28],
-        "Qty":x[30],
+        "Qty":x[33],
         "branch":"",
         
         })
@@ -1388,8 +1390,8 @@ async def stockFilter(data:dict,limit):
             "PUnit" :x[26],
             "PQUnit" :x[27],
             "SPUnit" :x[28],
-            "Qty":x[30],
-            "branch":x[31],
+            "Qty":x[33],
+            "branch":x[34],
             })
             ind = ind +1
             
@@ -1401,9 +1403,9 @@ async def stockFilter(data:dict,limit):
         for x in qstock :
             bStock.append({
             "key":ukey,
-            "BR" :x[31],    
+            "BR" :x[34],    
             "BRName":x[2],   
-            "Qty" :x[30],
+            "Qty" :x[33],
             "ItemNo" :x[0],
             "ItemName" :x[1],
             "ItemName2" :x[2],
@@ -1671,15 +1673,15 @@ async def StockBranch(uid:str, id:str):
     
     cur = conn.cursor()
     
-    cur.execute(f"SELECT * FROM `goodsqty` WHERE `ItemNo` = '{id}'; ")
+    cur.execute(f"SELECT ItemNo, Branch,ItemName, SUM(Qin-Qout) AS QTY FROM goodstrans WHERE ItemNo= '{id}' GROUP BY ItemNo, Branch")
     branch = []
     ind = 0
     for x in cur:          
-        branch.append({     
+        branch.append({
         "key":ind,                 
         "ItemNo" :x[0],  
         "BR" :x[1], 
-        "BRName":x[2],
+        "ItemName":x[2],
         "Qty":x[3], 
         })
         ind = ind +1
