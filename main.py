@@ -1147,22 +1147,22 @@ async def AccountingBranch(uid:str, id:str):
     
     cur = conn.cursor()
     if id =="ALLDATA":
-         cur.execute(f"""SELECT LEFT(ld.RefType, 2) AS RType,ld.AccNo,lh.Name,ld.Dep AS BR, SUM(DB) AS DB, SUM(CR) AS CR, SUM(DB - CR) AS Balance
+         cur.execute(f"""SELECT ld.AccNo,lh.Name ,ld.Dep AS BR,LEFT(ld.RefType, 2) AS InvType, SUM(DB) AS DB, SUM(CR) AS CR, SUM(DB - CR) AS Balance
 FROM 
     listdaily 
     ld LEFT JOIN (SELECT AccNo,AccName AS Name FROM listhisab GROUP BY AccNo) lh ON lh.AccNo = ld.AccNo
 GROUP BY
-    RType,
+    InvType,
     ld.AccNo,
     BR;""")
     else:
-        cur.execute(f"""    SELECT LEFT(ld.RefType, 2) AS RType,ld.AccNo,lh.Name,ld.Dep AS BR, SUM(DB) AS DB, SUM(CR) AS CR, SUM(DB - CR) AS Balance
+        cur.execute(f"""SELECT ld.AccNo,lh.Name ,ld.Dep AS BR,LEFT(ld.RefType, 2) AS InvType, SUM(DB) AS DB, SUM(CR) AS CR, SUM(DB - CR) AS Balance
 FROM 
     listdaily 
     ld LEFT JOIN (SELECT AccNo,AccName AS Name FROM listhisab GROUP BY AccNo) lh ON lh.AccNo = ld.AccNo
 WHERE ld.AccNo = '{id}'
 GROUP BY
-    RType,
+    InvType,
     ld.AccNo,
     BR;""")
     summery = []
@@ -1170,12 +1170,13 @@ GROUP BY
     for x in cur:          
         summery.append({     
         "key":ind,                 
-        "ItemNo" :x[0],  
-        "Branch" :x[1], 
-        "InvType":x[2],
-        "Qty":x[3], 
-        "Total":x[4], 
-        "Tax":x[5], 
+        "AccNo" :x[0],  
+        "Name" :x[1], 
+        "BR":x[2],
+        "InvType":x[3], 
+        "DB":x[4], 
+        "CR":x[5], 
+        "Balance":x[6],
         })
         ind = ind +1
 
@@ -1459,7 +1460,7 @@ async def stockFilter(data:dict,limit):
     
 
 @app.get("/moh/{uid}/Stock/Statement/{id}/{limit}",status_code=200)
-async def StockStatement(uid:str, id:str,limit:int):
+async def StockStatement(uid:str, id:str,limit):
     # if checkList(uid) == "unauthorized":
     #     return{"Info":"unauthorized"}
 
@@ -1482,7 +1483,7 @@ async def StockStatement(uid:str, id:str,limit:int):
         baseQuary = f"SELECT * FROM `goodstrans`   WHERE `ItemNo` = '{id}' "
     
     baseQuary = baseQuary + f"  ORDER BY `TDate` desc,`Time` desc limit {limit} "
-    
+    print(baseQuary)
     cur.execute(baseQuary)
     distype = []
     dbr = []
@@ -1714,7 +1715,7 @@ async def StockBranch(uid:str, id:str):
         WHEN LEFT(RefType, 3) = 'SAT' THEN LEFT(RefType, 3)
         ELSE LEFT(RefType, 2)
     END AS RType,
-    SUM(QTY) AS Qty,
+    SUM(Qin+Qout+Qod) AS Qty,
     SUM(Total) AS Total,
     SUM((TAX/100)*Total) AS Tax
     
@@ -1732,7 +1733,7 @@ GROUP BY
             WHEN LEFT(RefType, 3) = 'SAT' THEN LEFT(RefType, 3)
             ELSE LEFT(RefType, 2)
         END AS RType,
-        SUM(QTY) AS Qty,
+        SUM(Qin+Qout+Qod) AS Qty,
         SUM(Total) AS Total,
         SUM((TAX/100)*Total) AS Tax
         
@@ -1767,7 +1768,7 @@ GROUP BY
 
 
 @app.get("/moh/{uid}/Stock/Double/{type}/{number}/{limit}",status_code=200)
-async def StockStatement(uid:str, type:str, number:str,limit:int):
+async def StockStatement(uid:str, type:str, number:str,limit):
 
     username=uid
     try:
@@ -1780,8 +1781,12 @@ async def StockStatement(uid:str, type:str, number:str,limit:int):
                     "msg":{e}})
     
     cur = conn.cursor()
-    
-    cur.execute(f"SELECT * FROM `goodstrans` WHERE RefType = '{type}' AND RefNo = '{number}' ORDER BY LN limit {limit}")
+    if limit =="All":
+        query = f"SELECT * FROM `goodstrans` WHERE RefType = '{type}' AND RefNo = '{number}' ORDER BY LN"
+    else:
+        query = f"SELECT * FROM `goodstrans` WHERE RefType = '{type}' AND RefNo = '{number}' ORDER BY LN limit {limit}"
+    print(query)
+    cur.execute(query)
     double = []
     ind = 0
     for x in cur:
