@@ -420,10 +420,18 @@ WHERE
         
         
     if mydata["vAny"] != "":
+        AccNo=prefixWithWithoutBranch+"AccNo"
+        AccName=prefixWithWithoutBranch +"AccName"
+        Contact = prefixWithWithoutBranch+"Contact"
+        Address= prefixWithWithoutBranch +"Address"
+        AccName2=prefixWithWithoutBranch+"AccName2"
+        tel = prefixWithWithoutBranch +"tel"
+        Fax = prefixWithWithoutBranch+"Fax"
+
         if mydata["sAny"] == "Start":
-            baseQuary = baseQuary + str(f" AND ( {prefixWithWithoutBranch+"AccNo"} like \'{mydata['vAny']}%\' OR {prefixWithWithoutBranch +"AccName"} like \'{mydata['vAny']}%\' OR {prefixWithWithoutBranch+"Contact"} like \'{mydata['vAny']}%\' OR {prefixWithWithoutBranch +"Address"} like \'{mydata['vAny']}%\' OR {prefixWithWithoutBranch +"tel"} like \'{mydata['vAny']}%\' OR {prefixWithWithoutBranch+"AccName2"} like \'{mydata['vAny']}%\' OR {prefixWithWithoutBranch+"Fax"} like \'{mydata['vAny']}%\')  ")
+            baseQuary = baseQuary + str(f" AND ( {AccNo} like \'{mydata['vAny']}%\' OR {AccName} like \'{mydata['vAny']}%\' OR {Contact} like \'{mydata['vAny']}%\' OR {Address} like \'{mydata['vAny']}%\' OR {tel} like \'{mydata['vAny']}%\' OR {AccName2} like \'{mydata['vAny']}%\' OR {Fax} like \'{mydata['vAny']}%\')  ")
         elif mydata["sAny"] == "Contains":
-            baseQuary = baseQuary + str(f" AND ( {prefixWithWithoutBranch+"AccNo"} like \'%{mydata['vAny']}%\' OR  {prefixWithWithoutBranch+"AccNo"} like \'{mydata['vAny']}%\' OR  {prefixWithWithoutBranch+"AccNo"} like \'%{mydata['vAny']}\' OR {prefixWithWithoutBranch +"AccName"} like \'%{mydata['vAny']}%\'  OR {prefixWithWithoutBranch +"AccName"} like \'{mydata['vAny']}%\'  OR {prefixWithWithoutBranch +"AccName"} like \'%{mydata['vAny']}\' OR {prefixWithWithoutBranch+"Contact"} like \'%{mydata['vAny']}%\'  OR {prefixWithWithoutBranch+"Contact"} like \'{mydata['vAny']}%\'  OR {prefixWithWithoutBranch+"Contact"} like \'%{mydata['vAny']}\' OR {prefixWithWithoutBranch +"Address"}  like \'%{mydata['vAny']}%\'  OR {prefixWithWithoutBranch +"Address"}  like \'{mydata['vAny']}%\'  OR {prefixWithWithoutBranch +"Address"}  like \'%{mydata['vAny']}\' OR {prefixWithWithoutBranch +"tel"} like \'%{mydata['vAny']}%\'  OR {prefixWithWithoutBranch +"tel"} like \'{mydata['vAny']}%\'  OR {prefixWithWithoutBranch +"tel"} like \'%{mydata['vAny']}\' OR {prefixWithWithoutBranch+"AccName2"} like \'%{mydata['vAny']}%\'  OR {prefixWithWithoutBranch+"AccName2"} like \'{mydata['vAny']}%\'  OR {prefixWithWithoutBranch+"AccName2"} like \'%{mydata['vAny']}\' OR {prefixWithWithoutBranch+"Fax"} like \'%{mydata['vAny']}%\' OR {prefixWithWithoutBranch+"Fax"} like \'{mydata['vAny']}%\' OR {prefixWithWithoutBranch+"Fax"} like \'%{mydata['vAny']}\' )  ")
+            baseQuary = baseQuary + str(f" AND ( {AccNo} like \'%{mydata['vAny']}%\' OR  {AccNo} like \'{mydata['vAny']}%\' OR  {AccNo} like \'%{mydata['vAny']}\' OR {AccName} like \'%{mydata['vAny']}%\'  OR {AccName} like \'{mydata['vAny']}%\'  OR {AccName} like \'%{mydata['vAny']}\' OR {Contact} like \'%{mydata['vAny']}%\'  OR {Contact} like \'{mydata['vAny']}%\'  OR {Contact} like \'%{mydata['vAny']}\' OR {Address}  like \'%{mydata['vAny']}%\'  OR {Address}  like \'{mydata['vAny']}%\'  OR {Address}  like \'%{mydata['vAny']}\' OR {tel} like \'%{mydata['vAny']}%\'  OR {tel} like \'{mydata['vAny']}%\'  OR {tel} like \'%{mydata['vAny']}\' OR {AccName2} like \'%{mydata['vAny']}%\'  OR {AccName2} like \'{mydata['vAny']}%\'  OR {AccName2} like \'%{mydata['vAny']}\' OR {Fax} like \'%{mydata['vAny']}%\' OR {Fax} like \'{mydata['vAny']}%\' OR {Fax} like \'%{mydata['vAny']}\' )  ")
     flag=0
     for f in filters:
         if mydata["branch"]:
