@@ -129,15 +129,14 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
 #('paradox', 'hkm', '123', 'owner', 1)
     for users in userlist:
             if users[0].lower() == compname.lower() and users[1].lower() == username.lower() and users[2] == password:
-                if str(users[4]) == "0": 
-                    print("problem var")
+                if str(users[4]) == "N": 
+                    
                     return{"Info":"unauthorized",
-                            "msg":"Please Check Your Service Provider"
+                            "msg":"Please Check Your Subscription"
                             }         
                 else:  
                     uid = uuid.uuid1()
-                    print(uid)
-                    addList(username=username,uid=uid,compname=compname)
+                    
                     return{
                         "Info":"authorized",
                         "compname":users[0],
@@ -301,7 +300,7 @@ WHERE
         "split":"",
         "val":"",
     })
-    #goodsqty
+   
     for l in cur:
         branches.append({
             "key":l[0],
@@ -405,7 +404,8 @@ WHERE
     lh.AccNo IS NOT NULL """
    
     elif mydata["branch"]:
-        prefixWithWithoutBranch="ld."
+        
+        prefixWithWithoutBranch="lh."
         if mydata["selectedBranch"] == "Any":
             #baseQuary = "SELECT * FROM hisabbr WHERE AccNo IS NOT NULL "
             baseQuary="""SELECT SUM(ld.DB - ld.CR) AS Balance, ld.Dep,SUM(ld.DB),SUM(ld.CR),lh.* FROM listdaily ld LEFT JOIN( SELECT * FROM listhisab) lh ON ld.AccNo = lh.AccNo WHERE ld.AccNo IS NOT NULL """
@@ -424,6 +424,7 @@ WHERE
             baseQuary = baseQuary + str(f" AND ( {prefixWithWithoutBranch+"AccNo"} like \'{mydata['vAny']}%\' OR {prefixWithWithoutBranch +"AccName"} like \'{mydata['vAny']}%\' OR {prefixWithWithoutBranch+"Contact"} like \'{mydata['vAny']}%\' OR {prefixWithWithoutBranch +"Address"} like \'{mydata['vAny']}%\' OR {prefixWithWithoutBranch +"tel"} like \'{mydata['vAny']}%\' OR {prefixWithWithoutBranch+"AccName2"} like \'{mydata['vAny']}%\' OR {prefixWithWithoutBranch+"Fax"} like \'{mydata['vAny']}%\')  ")
         elif mydata["sAny"] == "Contains":
             baseQuary = baseQuary + str(f" AND ( {prefixWithWithoutBranch+"AccNo"} like \'%{mydata['vAny']}%\' OR  {prefixWithWithoutBranch+"AccNo"} like \'{mydata['vAny']}%\' OR  {prefixWithWithoutBranch+"AccNo"} like \'%{mydata['vAny']}\' OR {prefixWithWithoutBranch +"AccName"} like \'%{mydata['vAny']}%\'  OR {prefixWithWithoutBranch +"AccName"} like \'{mydata['vAny']}%\'  OR {prefixWithWithoutBranch +"AccName"} like \'%{mydata['vAny']}\' OR {prefixWithWithoutBranch+"Contact"} like \'%{mydata['vAny']}%\'  OR {prefixWithWithoutBranch+"Contact"} like \'{mydata['vAny']}%\'  OR {prefixWithWithoutBranch+"Contact"} like \'%{mydata['vAny']}\' OR {prefixWithWithoutBranch +"Address"}  like \'%{mydata['vAny']}%\'  OR {prefixWithWithoutBranch +"Address"}  like \'{mydata['vAny']}%\'  OR {prefixWithWithoutBranch +"Address"}  like \'%{mydata['vAny']}\' OR {prefixWithWithoutBranch +"tel"} like \'%{mydata['vAny']}%\'  OR {prefixWithWithoutBranch +"tel"} like \'{mydata['vAny']}%\'  OR {prefixWithWithoutBranch +"tel"} like \'%{mydata['vAny']}\' OR {prefixWithWithoutBranch+"AccName2"} like \'%{mydata['vAny']}%\'  OR {prefixWithWithoutBranch+"AccName2"} like \'{mydata['vAny']}%\'  OR {prefixWithWithoutBranch+"AccName2"} like \'%{mydata['vAny']}\' OR {prefixWithWithoutBranch+"Fax"} like \'%{mydata['vAny']}%\' OR {prefixWithWithoutBranch+"Fax"} like \'{mydata['vAny']}%\' OR {prefixWithWithoutBranch+"Fax"} like \'%{mydata['vAny']}\' )  ")
+    flag=0
     for f in filters:
         if mydata["branch"]:
             
@@ -432,10 +433,16 @@ WHERE
                 fullyName="ld."+f['name']
                 print(fullyName)
             elif f['name']=="Balance":
-                flag=1 #then i want to stop this iteration and enter in for loop and continue the next iteration
-                break
+                if f["value"] !="":
+                    flag=1 #then i want to stop this iteration and enter in for loop and continue the next iteration
+                    sign= f["type"]
+                    value = f['value']
+                    break
         else:
-            fullyName="lh."+f['name']
+            if f['name'] == "Balance":
+                 fullyName=f['name']
+            else:
+                fullyName="lh."+f['name']
         if f["value"] != "":
             if f["type"] == "Start":     
                 baseQuary = baseQuary + str(f" AND {fullyName} like \'{f['value']}%\' ")
@@ -453,22 +460,33 @@ WHERE
                 baseQuary = baseQuary + str(f" AND {fullyName} >= \'{f['value']}\' ")
             elif f["type"] == "<=":
                 baseQuary = baseQuary + str(f" AND {fullyName} <= \'{f['value']}\' ")
-           
+   
     #zabit hon having
-    if limit != "All":
-        if  mydata["branch"]:
-             
-            baseQuary = baseQuary + str(f"GROUP BY ld.AccNo,ld.Dep limit {limit};")
-        else:
-           
-            baseQuary = baseQuary + str(f"GROUP BY lh.AccNo limit {limit};")
-    else:
-        if  mydata["branch"]:
-             
-            baseQuary = baseQuary + str(f"GROUP BY ld.AccNo,ld.Dep;")
-        else:
-            baseQuary = baseQuary + str(f"GROUP BY lh.AccNo;")
     
+    if  mydata["branch"]:
+             
+        baseQuary = baseQuary + str(f"GROUP BY ld.AccNo,ld.Dep ")
+    else:
+           
+        baseQuary = baseQuary + str(f"GROUP BY lh.AccNo ")
+
+    if flag ==1:
+        if sign == "Not Equal":
+                baseQuary = baseQuary + str(f" HAVING Balance != \'{value}\' ")
+        elif sign == ">":
+                baseQuary = baseQuary + str(f" HAVING Balance > \'{value}\' ")
+        elif sign == "<":
+                baseQuary = baseQuary + str(f" HAVING Balance < \'{value}\' ")
+        elif sign == "=":
+                baseQuary = baseQuary + str(f" HAVING Balance = \'{value}\' ")
+        elif sign == ">=":
+                baseQuary = baseQuary + str(f" HAVING Balance >= \'{value}\' ")
+        elif sign == "<=":
+                baseQuary = baseQuary + str(f" HAVING Balance <= \'{value}\' ")    
+    if limit != "All":     
+        baseQuary = baseQuary + str(f"limit {limit};")
+
+
     print(baseQuary)
     cur.execute(baseQuary)
     
@@ -484,16 +502,16 @@ WHERE
                     "AccName":x[5],
                     "Cur":x[6],
                     "Balance":x[0],
-                    "set":x[10],
-                    "category":x[11],
-                    "Price":x[12],
-                    "Contact":x[13],
-                    "TaxNo":x[14],
-                    "Address":x[16],
-                    "tel":x[17],
-                    "Mobile":x[18],
-                    "AccName2":x[19],
-                    "Fax":x[20],
+                    "set":x[7],
+                    "category":x[8],
+                    "Price":x[9],
+                    "Contact":x[10],
+                    "TaxNo":x[11],
+                    "Address":x[13],
+                    "tel":x[14],
+                    "Mobile":x[15],
+                    "AccName2":x[16],
+                    "Fax":x[17],
                     "Branch":x[1]
                     
                 })
@@ -506,46 +524,47 @@ WHERE
                     "AccNo":x[0],
                     "AccName":x[1],
                     "Cur":x[2],
-                    "Balance":x[17],
-                    "set":x[6],
-                    "category":x[7],
-                    "Price":x[8],
-                    "Contact":x[9],
-                    "TaxNo":x[10],
-                    "Address":x[12],
-                    "tel":x[13],
-                    "Mobile":x[14],
-                    "AccName2":x[15],
-                    "Fax":x[16],
+                    "Balance":x[14],
+                    "set":x[3],
+                    "category":x[4],
+                    "Price":x[5],
+                    "Contact":x[6],
+                    "TaxNo":x[7],
+                    "Address":x[9],
+                    "tel":x[10],
+                    "Mobile":x[11],
+                    "AccName2":x[12],
+                    "Fax":x[13],
                     
                 })
             ind = ind +1
+        print(ind)
     # cur.execute(f"""
     #     select * from hisabbr ;
     #     """)
     
-    if mydata["branch"]:
-        for x in r:
-       # if checkListFilter(x):
-            hisabBranches.append({
-                "AccNo":x[4],
-                "Branch":x[1],
-                "Balance":x[0],
-                "Cur":x[6],
-                "AccName":x[5],
-                "tel":x[17],
-                "Address":x[16],
-                "Fax":x[20],
-                "Mobile":x[18],
-                "Contact":x[13],
-                "set":x[10],
-                "category":x[11],
-                "Price":x[12],
-                "TaxNo":x[14],
-                "AccName2":x[19],
-                "DB":x[2],
-                "CR":x[3],
-            })
+    # if mydata["branch"]:
+    #     for x in r:
+    #    # if checkListFilter(x):
+    #         hisabBranches.append({
+    #             "AccNo":x[4],
+    #             "Branch":x[1],
+    #             "Balance":x[0],
+    #             "Cur":x[6],
+    #             "AccName":x[5],
+    #             "tel":x[17],
+    #             "Address":x[16],
+    #             "Fax":x[20],
+    #             "Mobile":x[18],
+    #             "Contact":x[13],
+    #             "set":x[10],
+    #             "category":x[11],
+    #             "Price":x[12],
+    #             "TaxNo":x[14],
+    #             "AccName2":x[19],
+    #             "DB":x[2],
+    #             "CR":x[3],
+    #         })
 
     
     return{
@@ -1149,13 +1168,11 @@ async def AccountingBranch(uid:str, id:str):
     
     cur = conn.cursor()
     if id =="ALLDATA":
-         cur.execute(f"""SELECT ld.AccNo,lh.Name ,ld.Dep AS BR,LEFT(ld.RefType, 2) AS InvType, SUM(DB) AS DB, SUM(CR) AS CR, SUM(DB - CR) AS Balance
+         cur.execute(f"""SELECT AccNo, Dep AS BR,LEFT(RefType, 2) AS InvType, SUM(DB) AS DB, SUM(CR) AS CR, SUM(DB - CR) AS Balance
 FROM 
     listdaily 
-    ld LEFT JOIN (SELECT AccNo,AccName AS Name FROM listhisab GROUP BY AccNo) lh ON lh.AccNo = ld.AccNo
 GROUP BY
     InvType,
-    ld.AccNo,
     BR;""")
     else:
         cur.execute(f"""SELECT ld.AccNo,lh.Name ,ld.Dep AS BR,LEFT(ld.RefType, 2) AS InvType, SUM(DB) AS DB, SUM(CR) AS CR, SUM(DB - CR) AS Balance
@@ -1169,8 +1186,21 @@ GROUP BY
     BR;""")
     summery = []
     ind = 0
-    for x in cur:          
-        summery.append({     
+    if id=="ALLDATA":
+        for x in cur:          
+            summery.append({     
+        "key":ind,                 
+        "AccNo" :x[0],  
+        "BR":x[1],
+        "InvType":x[2], 
+        "DB":x[3], 
+        "CR":x[4], 
+        "Balance":x[5],
+            })
+            ind = ind +1
+    else:
+        for x in cur:          
+            summery.append({     
         "key":ind,                 
         "AccNo" :x[0],  
         "Name" :x[1], 
@@ -1179,8 +1209,8 @@ GROUP BY
         "DB":x[4], 
         "CR":x[5], 
         "Balance":x[6],
-        })
-        ind = ind +1
+            })
+            ind = ind +1
 
     
     return{
@@ -1823,71 +1853,71 @@ async def StockStatement(uid:str, type:str, number:str,limit):
     "double":double,
     }
 
-@app.post("/moh/newInvoice/")
-async def newInvoice(data:dict):
-    username = data["compname"]
-    try:
-            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
-        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
-    except mariadb.Error as e:       
-            print(f"Error connecting to MariaDB Platform: {e}")  
-            response.status_code = status.HTTP_401_UNAUTHORIZED
-            return({"Info":"unauthorized",
-                    "msg":{e}})
+# @app.post("/moh/newInvoice/")
+# async def newInvoice(data:dict):
+#     username = data["compname"]
+#     try:
+#             conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+#         #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+#     except mariadb.Error as e:       
+#             print(f"Error connecting to MariaDB Platform: {e}")  
+#             response.status_code = status.HTTP_401_UNAUTHORIZED
+#             return({"Info":"unauthorized",
+#                     "msg":{e}})
     
-    try:
-        cur = conn.cursor()
+#     try:
+#         cur = conn.cursor()
         
-        cdate = datetime.now()
+#         cdate = datetime.now()
         
-        print(cdate)
-        ddate = str(cdate.date()).split("-")
-        tdate = str(cdate.time()).split(":")
-        refnumber = str(ddate[1])+str(ddate[2])+str(tdate[0])+str(tdate[1])+str(tdate[2]).split(".")[0]
+#         print(cdate)
+#         ddate = str(cdate.date()).split("-")
+#         tdate = str(cdate.time()).split(":")
+#         refnumber = str(ddate[1])+str(ddate[2])+str(tdate[0])+str(tdate[1])+str(tdate[2]).split(".")[0]
         
-        cur.execute(f"""
-                    INSERT INTO `{username}`.`tempinv` (`type`, `number`, `accno`, `accname`, `vdate`, `vtime`, `items`, `user`) 
-                    VALUES ('{data["type"]}', '{refnumber}', '{data["accno"]}', '{data["accname"]}', '{str(cdate.date())}', '{str(cdate.time()).split(".")[0]}', '{data["items"]}', '{data["username"]}');
-                    """)
+#         cur.execute(f"""
+#                     INSERT INTO `{username}`.`tempinv` (`type`, `number`, `accno`, `accname`, `vdate`, `vtime`, `items`, `user`) 
+#                     VALUES ('{data["type"]}', '{refnumber}', '{data["accno"]}', '{data["accname"]}', '{str(cdate.date())}', '{str(cdate.time()).split(".")[0]}', '{data["items"]}', '{data["username"]}');
+#                     """)
         
-        items = str(data["items"]).split("!")
+#         items = str(data["items"]).split("!")
         
-        print(data)
+#         print(data)
         
-        idx = 1
+#         idx = 1
         
-        for item in items:
-            if item == "":
-                pass
-            else:
-                pdate = ddate[0] + "/" + ddate[1] + "/" + ddate[2]
-                att = str(item).split(";")
+#         for item in items:
+#             if item == "":
+#                 pass
+#             else:
+#                 pdate = ddate[0] + "/" + ddate[1] + "/" + ddate[2]
+#                 att = str(item).split(";")
                 
-                total = float(att[1]) * float(att[2]) - (float(att[1]) * float(att[2]) * float(att[4]) ) / 100
+#                 total = float(att[1]) * float(att[2]) - (float(att[1]) * float(att[2]) * float(att[4]) ) / 100
                 
-                cur.execute(f"""
-                            UPDATE {username}.goodsqty SET Qty = Qty - {float(att[1])}  WHERE  `ItemNo`='{att[0]}' AND `BR`='{att[3]}';
-                            """)
+#                 cur.execute(f"""
+#                             UPDATE {username}.goodsqty SET Qty = Qty - {float(att[1])}  WHERE  `ItemNo`='{att[0]}' AND `BR`='{att[3]}';
+#                             """)
         
-                cur.execute(f"""
-                            UPDATE {username}.goodsbr SET Qty1 = Qty1 - {float(att[1])}  WHERE  `ItemNoQ`='{att[0]}' AND `BR`='{att[3]}';
-                            """)
+#                 cur.execute(f"""
+#                             UPDATE {username}.goodsbr SET Qty1 = Qty1 - {float(att[1])}  WHERE  `ItemNoQ`='{att[0]}' AND `BR`='{att[3]}';
+#                             """)
                 
-                cur.execute(f"""
-                            INSERT INTO `{username}`.`goodstrans` (`RefType`, `RefNo`, `TDate`, `LN`, `ItemNo`, `Branch`, `PQty`, `Qty`, `UPrice`, `UFob`, `PQUnit`, `Disc`, `Weight`, `Notes`, `Tax`, `Total`, `AccNo`, `Disc100`, `AccName`, `ItemName`) 
+#                 cur.execute(f"""
+#                             INSERT INTO `{username}`.`goodstrans` (`RefType`, `RefNo`, `TDate`, `LN`, `ItemNo`, `Branch`, `PQty`, `Qty`, `UPrice`, `UFob`, `PQUnit`, `Disc`, `Weight`, `Notes`, `Tax`, `Total`, `AccNo`, `Disc100`, `AccName`, `ItemName`) 
                             
-                            VALUES ('{data['type']}', '{refnumber}', '{pdate}', '{idx}', '{att[0]}', '{att[3]}', '0', '{float(att[1])}', '{float(att[2])}', '0', '', '0', '0', '', '{float(att[5])}', '{total}', '{data["accno"]}', '{float(att[4])}', '{data["accname"]}', '');
+#                             VALUES ('{data['type']}', '{refnumber}', '{pdate}', '{idx}', '{att[0]}', '{att[3]}', '0', '{float(att[1])}', '{float(att[2])}', '0', '', '0', '0', '', '{float(att[5])}', '{total}', '{data["accno"]}', '{float(att[4])}', '{data["accname"]}', '');
 
-                            """)
-            idx = idx + 1
-        conn.commit()
+#                             """)
+#             idx = idx + 1
+#         conn.commit()
         
-        return{"Info":"authorized",
-            "msg":"successfull"}
+#         return{"Info":"authorized",
+#             "msg":"successfull"}
 
-    except Exception as e:
-        return{"Info":"Failed",
-            "msg":f"{str(e)}"}
+#     except Exception as e:
+#         return{"Info":"Failed",
+#             "msg":f"{str(e)}"}
 
 
 
