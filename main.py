@@ -115,7 +115,7 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
     #     userlist = info2.readlines()
     
     try:
-            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = "python") 
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = "python")
     except mariadb.Error as e:       
             print(f"Error connecting to MariaDB Platform: {e}")  
             return {"Info":"unauthorized",
@@ -258,7 +258,7 @@ LEFT JOIN (
    
 ) ld ON lh.AccNo = ld.AccNo
 WHERE 
-    lh.AccNo IS NOT NULL AND ld.balance>0 limit {limit}""") #honn
+    lh.AccNo IS NOT NULL AND ld.balance != 0 limit {limit}""") #honn
     hisab = []
     ind = 0
     for x in cur:
@@ -433,13 +433,15 @@ WHERE
         elif mydata["sAny"] == "Contains":
             baseQuary = baseQuary + str(f" AND ( {AccNo} like \'%{mydata['vAny']}%\' OR  {AccNo} like \'{mydata['vAny']}%\' OR  {AccNo} like \'%{mydata['vAny']}\' OR {AccName} like \'%{mydata['vAny']}%\'  OR {AccName} like \'{mydata['vAny']}%\'  OR {AccName} like \'%{mydata['vAny']}\' OR {Contact} like \'%{mydata['vAny']}%\'  OR {Contact} like \'{mydata['vAny']}%\'  OR {Contact} like \'%{mydata['vAny']}\' OR {Address}  like \'%{mydata['vAny']}%\'  OR {Address}  like \'{mydata['vAny']}%\'  OR {Address}  like \'%{mydata['vAny']}\' OR {tel} like \'%{mydata['vAny']}%\'  OR {tel} like \'{mydata['vAny']}%\'  OR {tel} like \'%{mydata['vAny']}\' OR {AccName2} like \'%{mydata['vAny']}%\'  OR {AccName2} like \'{mydata['vAny']}%\'  OR {AccName2} like \'%{mydata['vAny']}\' OR {Fax} like \'%{mydata['vAny']}%\' OR {Fax} like \'{mydata['vAny']}%\' OR {Fax} like \'%{mydata['vAny']}\' )  ")
     flag=0
+    print(filters)
     for f in filters:
+        print(f['name'])
         if mydata["branch"]:
             
             if f['name']!="Balance":
                 
-                fullyName="ld."+f['name']
-                print(fullyName)
+                fullyName="lh."+f['name']
+               
             elif f['name']=="Balance":
                 if f["value"] !="":
                     flag=1 #then i want to stop this iteration and enter in for loop and continue the next iteration
@@ -520,7 +522,9 @@ WHERE
                     "Mobile":x[15],
                     "AccName2":x[16],
                     "Fax":x[17],
-                    "Branch":x[1]
+                    "Branch":x[1],
+                    "DB":x[2],
+                    "CR":x[3],
                     
                 })
             ind = ind +1
@@ -546,33 +550,6 @@ WHERE
                     
                 })
             ind = ind +1
-        print(ind)
-    # cur.execute(f"""
-    #     select * from hisabbr ;
-    #     """)
-    
-    # if mydata["branch"]:
-    #     for x in r:
-    #    # if checkListFilter(x):
-    #         hisabBranches.append({
-    #             "AccNo":x[4],
-    #             "Branch":x[1],
-    #             "Balance":x[0],
-    #             "Cur":x[6],
-    #             "AccName":x[5],
-    #             "tel":x[17],
-    #             "Address":x[16],
-    #             "Fax":x[20],
-    #             "Mobile":x[18],
-    #             "Contact":x[13],
-    #             "set":x[10],
-    #             "category":x[11],
-    #             "Price":x[12],
-    #             "TaxNo":x[14],
-    #             "AccName2":x[19],
-    #             "DB":x[2],
-    #             "CR":x[3],
-    #         })
 
     
     return{
@@ -1253,7 +1230,7 @@ async def Stock(uid:str,limit:int):
     
     cur = conn.cursor()
     
-    cur.execute(f"SELECT go.*,gt.totalQty,gt.Branch FROM goods go LEFT JOIN (SELECT SUM(Qin - Qout) AS totalQty, ItemNo,Branch FROM goodstrans GROUP BY ItemNo) gt ON go.ItemNo = gt.ItemNo limit {limit};")
+    cur.execute(f"SELECT go.*,gt.totalQty,gt.Branch FROM goods go LEFT JOIN (SELECT SUM(Qin - Qout) AS totalQty, ItemNo,Branch FROM goodstrans GROUP BY ItemNo) gt ON go.ItemNo = gt.ItemNo WHERE totalQty!=0 limit {limit};")
     qstock = list(cur)
    
     goods = []
