@@ -551,11 +551,12 @@ WHERE
                 })
             ind = ind +1
 
-    
+    print(mydata["branch"])
     return{
        "Info":"authorized",
        "hisab":hisab,
        "hisabBranches":hisabBranches,
+       "branchSelection":mydata["branch"]
         
    }
     
@@ -1135,8 +1136,8 @@ async def StockStatement(uid:str, type:str, number:str):
         "double":double,
     }
 
-@app.get("/moh/{uid}/Accounting/Summery/{id}/",status_code=200)
-async def AccountingBranch(uid:str, id:str):
+@app.get("/moh/{uid}/Accounting/Summery/{id}/{branch}/{branchSearch}",status_code=200)
+async def AccountingBranch(uid:str, id:str, branch:str, branchSearch:bool):
     # if checkList(uid) == "unauthorized":
     #     return{"Info":"unauthorized"}
 
@@ -1153,14 +1154,14 @@ async def AccountingBranch(uid:str, id:str):
     
     cur = conn.cursor()
     if id =="ALLDATA":
-         cur.execute(f"""SELECT AccNo, Dep AS BR,LEFT(RefType, 2) AS InvType, SUM(DB) AS DB, SUM(CR) AS CR, SUM(DB - CR) AS Balance
+         basedquery = f"""SELECT AccNo, Dep AS BR,LEFT(RefType, 2) AS InvType, SUM(DB) AS DB, SUM(CR) AS CR, SUM(DB - CR) AS Balance
 FROM 
     listdaily 
 GROUP BY
     InvType,
-    BR;""")
+    BR """
     else:
-        cur.execute(f"""SELECT ld.AccNo,lh.Name ,ld.Dep AS BR,LEFT(ld.RefType, 2) AS InvType, SUM(DB) AS DB, SUM(CR) AS CR, SUM(DB - CR) AS Balance
+        basedquery = f"""SELECT ld.AccNo,lh.Name ,ld.Dep AS BR,LEFT(ld.RefType, 2) AS InvType, SUM(DB) AS DB, SUM(CR) AS CR, SUM(DB - CR) AS Balance
 FROM 
     listdaily 
     ld LEFT JOIN (SELECT AccNo,AccName AS Name FROM listhisab GROUP BY AccNo) lh ON lh.AccNo = ld.AccNo
@@ -1168,9 +1169,12 @@ WHERE ld.AccNo = '{id}'
 GROUP BY
     InvType,
     ld.AccNo,
-    BR;""")
+    BR """
     summery = []
     ind = 0
+    if branchSearch == True and branch!='Any':
+        basedquery = basedquery + f"""HAVING BR = {branch};"""
+    cur.execute(basedquery)
     if id=="ALLDATA":
         for x in cur:          
             summery.append({     
@@ -1203,6 +1207,75 @@ GROUP BY
     "summery":summery
     }
 
+@app.get("/moh/{uid}/Accounting/InitialSummery/{id}/{branch}/{branchSearch}",status_code=200)
+async def AccountingBranch(uid:str, id:str,branch:str,branchSearch:bool):
+    # if checkList(uid) == "unauthorized":
+    #     return{"Info":"unauthorized"}
+
+    # elif checkList(uid).split("|")[0] == "authorized":
+    #     username = checkList(uid).split("|")[1]
+    username=uid
+    try:
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+    except mariadb.Error as e:       
+            print(f"Error connecting to MariaDB Platform: {e}")  
+            response.status_code = status.HTTP_401_UNAUTHORIZED
+            return({"Info":"unauthorized",
+                    "msg":{e}})
+    
+    cur = conn.cursor()
+    
+    
+    if id =="ALLDATA":
+        basequery = f"""SELECT AccNo, Dep AS BR,RefType AS InvType, SUM(DB) AS DB, SUM(CR) AS CR, SUM(DB - CR) AS Balance
+FROM 
+    listdaily GROUP BY InvType,BR """
+    else:
+        basequery = f"""SELECT ld.AccNo,lh.Name ,ld.Dep AS BR,ld.RefType AS InvType, SUM(DB) AS DB, SUM(CR) AS CR, SUM(DB - CR) AS Balance
+FROM 
+    listdaily 
+    ld LEFT JOIN (SELECT AccNo,AccName AS Name FROM listhisab GROUP BY AccNo) lh ON lh.AccNo = ld.AccNo
+WHERE ld.AccNo = '{id}' GROUP BY InvType,ld.AccNo,BR """
+    if branch!="Any" and branchSearch==True:
+        basequery = basequery+ f"""HAVING BR = {branch};"""
+    print(basequery)
+    cur.execute(basequery)
+
+
+    summery = []
+
+    ind = 0
+    if id=="ALLDATA":
+        for x in cur:          
+            summery.append({     
+        "key":ind,                 
+        "AccNo" :x[0],  
+        "BR":x[1],
+        "InvType":x[2], 
+        "DB":x[3], 
+        "CR":x[4], 
+        "Balance":x[5],
+            })
+            ind = ind +1
+    else:
+        for x in cur:          
+            summery.append({     
+        "key":ind,                 
+        "AccNo" :x[0],  
+        "Name" :x[1], 
+        "BR":x[2],
+        "InvType":x[3], 
+        "DB":x[4], 
+        "CR":x[5], 
+        "Balance":x[6],
+            })
+            ind = ind +1
+
+    
+    return{
+    "Info":"authorized",
+    "summery":summery
+    }
 
 
 
@@ -1708,8 +1781,8 @@ async def StockBranch(uid:str, id:str):
 
 
 
-@app.get("/moh/{uid}/Stock/Summery/{id}/",status_code=200)
-async def StockBranch(uid:str, id:str):
+@app.get("/moh/{uid}/Stock/Summery/{id}/{branch}/{branchSearch}",status_code=200)
+async def StockBranch(uid:str, id:str,branch:str,branchSearch:bool):
     # if checkList(uid) == "unauthorized":
     #     return{"Info":"unauthorized"}
 
@@ -1726,7 +1799,7 @@ async def StockBranch(uid:str, id:str):
     
     cur = conn.cursor()
     if id =="ALLDATA":
-         cur.execute(f"""SELECT 
+        basequery = f"""SELECT 
 		ItemNo,Branch AS BR,
     CASE 
         WHEN LEFT(RefType, 3) = 'SAT' THEN LEFT(RefType, 3)
@@ -1742,9 +1815,9 @@ FROM
 GROUP BY 
     RType,
     
-    Branch;""")
+    Branch """
     else:
-        cur.execute(f"""SELECT 
+        basequery = f"""SELECT 
             ItemNo,Branch AS BR,
         CASE 
             WHEN LEFT(RefType, 3) = 'SAT' THEN LEFT(RefType, 3)
@@ -1762,7 +1835,10 @@ GROUP BY
     GROUP BY 
         RType,
         ItemNo,
-        Branch;""")
+        Branch """
+    if branch!="Any" and branchSearch==True:
+        basequery = basequery + f"""HAVING Branch = {branch};""" 
+    cur.execute(basequery)
     summery = []
     ind = 0
     for x in cur:          
