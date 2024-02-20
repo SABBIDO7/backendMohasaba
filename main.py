@@ -228,7 +228,7 @@ LEFT JOIN (
    
 ) ld ON lh.AccNo = ld.AccNo
 WHERE 
-    lh.AccNo IS NOT NULL AND ld.balance != 0 limit {limit}""") #honn
+    lh.AccNo IS NOT NULL AND (ld.balance >= 0.01 OR ld.balance <= -0.01) limit {limit}""") #honn
     hisab = []
     ind = 0
     for x in cur:
@@ -416,9 +416,18 @@ WHERE
             elif f["type"] == "Contains":
                 baseQuary = baseQuary + str(f" AND ({fullyName} like \'%{f['value']}%\' OR {fullyName} like \'{f['value']}%\' OR {fullyName} like \'%{f['value']}\')")
             elif f["type"] == "Not Equal":
-                baseQuary = baseQuary + str(f" AND {fullyName} != \'{f['value']}\' ")
+                if f['name'] == "Balance" and f['value'] == '0':
+                    print("fetit")
+                    baseQuary = baseQuary + str(f" AND ({fullyName} >= '0.01' OR {fullyName} <= '-0.01') ")
+                else:   
+                    print(f['value'])
+                    baseQuary = baseQuary + str(f" AND {fullyName} != \'{f['value']}\' ")
             elif f["type"] == ">":
-                baseQuary = baseQuary + str(f" AND {fullyName} > \'{f['value']}\' ")
+                if f['name'] == "Balance" and f['value'] == '0':
+                    print("fetit")
+                    baseQuary = baseQuary + str(f" AND {fullyName} >= '0.01' ")
+                else:
+                    baseQuary = baseQuary + str(f" AND {fullyName} > \'{f['value']}\' ")
             elif f["type"] == "<":
                 baseQuary = baseQuary + str(f" AND {fullyName} < \'{f['value']}\' ")
             elif f["type"] == "=":
@@ -439,9 +448,17 @@ WHERE
 
     if flag ==1:
         if sign == "Not Equal":
+            if value == '0':
+                print("fetiot")
+                baseQuary = baseQuary + str(f" HAVING Balance >= '0.01' OR Balance <= '-0.01' ")
+            else:
                 baseQuary = baseQuary + str(f" HAVING Balance != \'{value}\' ")
         elif sign == ">":
-                baseQuary = baseQuary + str(f" HAVING Balance > \'{value}\' ")
+                if f['value']=='0':
+                    print("fetit")
+                    baseQuary = baseQuary + str(f" HAVING Balance >= '0.01' ") 
+                else:
+                    baseQuary = baseQuary + str(f" HAVING Balance > \'{value}\' ")
         elif sign == "<":
                 baseQuary = baseQuary + str(f" HAVING Balance < \'{value}\' ")
         elif sign == "=":
@@ -454,7 +471,7 @@ WHERE
         baseQuary = baseQuary + str(f"limit {limit};")
 
 
-    
+    print(baseQuary)
     cur.execute(baseQuary)
     
     r = list(cur)
@@ -508,6 +525,7 @@ WHERE
                 })
             ind = ind +1
 
+    
   
     return{
        "Info":"authorized",
@@ -835,8 +853,9 @@ async def AccStatement(uid:str ,id:str,limit:int):
         }
         if br not in dbr:
             dbr.append(br)
-        tdb = tdb + math.trunc(float(vstat[5]))
-        tcr = tcr + math.trunc(float(vstat[6]))
+        tdb = tdb + vstat[5]
+        
+        tcr = tcr + vstat[6]
     distype.append({"value":"Sales","label":"Sales"})
     distype.append({"value":"Purchase","label":"Purchase"})
     distype.append({"value":"Order","label":"Order"})
@@ -844,7 +863,8 @@ async def AccStatement(uid:str ,id:str,limit:int):
     distype.append({"value":"Receipt V","label":"Receipt V"})
     distype.append({"value":"Payment V","label":"Payment V"})
     distype.append({"value":"Journal  V","label":"Journal  V"})
-        
+    print(tcr)
+    print(tdb)
     return{
         "Info":"authorized",
         "Statment":stat,
@@ -1226,7 +1246,7 @@ async def Stock(uid:str,limit:int):
     
     cur = conn.cursor()
     
-    cur.execute(f"SELECT go.*,gt.totalQty,gt.Branch FROM goods go LEFT JOIN (SELECT SUM(Qin - Qout) AS totalQty, ItemNo,Branch FROM goodstrans GROUP BY ItemNo) gt ON go.ItemNo = gt.ItemNo WHERE totalQty!=0 limit {limit};")
+    cur.execute(f"SELECT go.*,gt.totalQty,gt.Branch FROM goods go LEFT JOIN (SELECT SUM(Qin - Qout) AS totalQty, ItemNo,Branch FROM goodstrans GROUP BY ItemNo) gt ON go.ItemNo = gt.ItemNo WHERE (totalQty >= 0.01 OR totalQty <= -0.01) limit {limit};")
     qstock = list(cur)
    
     goods = []
@@ -1345,9 +1365,17 @@ async def stockFilter(data:dict,limit):
             elif f["type"] == "Contains":
                 baseQuary = baseQuary + str(f" AND ({fullyName}{f['name']} like \'%{f['value']}%\' OR {fullyName}{f['name']} like \'{f['value']}%\' OR {fullyName}{f['name']} like \'%{f['value']}\') ")
             elif f["type"] == "Not Equal":
-                baseQuary = baseQuary + str(f" AND {fullyName}{f['name']} != \'{f['value']}\' ")
+                if f['name'] == "qty" and f['value']=='0':
+                    print("fetit")
+                    baseQuary = baseQuary + str(f" AND ({fullyName}{f['name']} >= '0.01' OR {fullyName}{f['name']} <= '-0.01') ") 
+                else:
+                    baseQuary = baseQuary + str(f" AND {fullyName}{f['name']} != \'{f['value']}\' ")
             elif f["type"] == ">":
-                baseQuary = baseQuary + str(f" AND {fullyName}{f['name']} > \'{f['value']}\' ")
+                if f['name'] == "qty" and f['value']=='0':
+                    print("fetit")
+                    baseQuary = baseQuary + str(f" AND {fullyName}{f['name']} >= '0.01' ") 
+                else:
+                    baseQuary = baseQuary + str(f" AND {fullyName}{f['name']} > \'{f['value']}\' ")
             elif f["type"] == "<":
                 baseQuary = baseQuary + str(f" AND {fullyName}{f['name']} < \'{f['value']}\' ")
             elif f["type"] == "=":
