@@ -78,7 +78,7 @@ def addList(username,uid,compname):
     now = datetime.now()
     current_time = now.strftime("%D:%H:%M")
     final = str(compname) + "|" + str(uid) + "|" + str(current_time) + "|" + str(username) + "|"
-    print(final)
+   
     activelist.append(final)
 
 
@@ -163,7 +163,7 @@ async def getAccounts(data:dict):
     
     cur = conn.cursor()
 
-    print(data)
+    
     
     baseQuary = "select * from "
     
@@ -182,7 +182,7 @@ async def getAccounts(data:dict):
             baseQuary = baseQuary + f"""  and (itemname LIKE '{data["value"]}%' or itemname LIKE '%{data["value"]}' or itemname LIKE '%{data["value"]}%' or itemno LIKE '{data["value"]}%' or itemno LIKE '%{data["value"]}' or itemno LIKE '%{data["value"]}%' or itemname2 LIKE '{data["value"]}%' or itemname2 LIKE '%{data["value"]}' or itemname2 LIKE '%{data["value"]}%')  """
             
     baseQuary = baseQuary + " limit 100 "
-    print(baseQuary)
+  
     cur.execute(baseQuary)
     r = list(cur)
     
@@ -191,35 +191,12 @@ async def getAccounts(data:dict):
         "opp":r
     }
         
-        
-        
-        
-        
-        
-# @app.get("/moh/{uid}/login/")
-# async def logintoken(uid:str):
-#     val = checkList(uid)
-#     if val == "unauthorized":
-#         return{"Info":"unauthorized"}
-
-#     elif val.split("|")[0] == "authorized":
-#         compname = val.split("|")[1]
-#         username = val.split("|")[2]
-#         return{
-#                 "Info":"authorized",
-#                 "compname":compname,
-#                 "name":username,
-#                     }
 
 @app.get("/moh/{uid}/Accounting/{limit}/",status_code=200)
 async def Accounting(uid:str,limit:int):
-    # if checkList(uid) == "unauthorized":
-    #     return{"Info":"unauthorized"}
 
-    # elif checkList(uid).split("|")[0] == "authorized":
-    #     username = checkList(uid).split("|")[1]
     username=uid
-    print(username)
+    
     try:
         conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
         conn2 = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
@@ -233,14 +210,7 @@ async def Accounting(uid:str,limit:int):
     cur = conn.cursor()
     cur2 = conn2.cursor()
     
-    # cur.execute("SELECT DISTINCT(Cur) FROM listhisab")
-    # distinctCurrency = list(cur)
 
-    # totalBalance = []
-    # for c in distinctCurrency:
-    #     cur.execute(f"SELECT sum(Balance) FROM listhisab where Cur = '{c[0]}';")
-    #     temp = list(cur)[0][0]
-    #     totalBalance.append({c[0]:round(temp,3)})
 
     cur.execute(f"""SELECT 
     lh.*, 
@@ -262,31 +232,21 @@ WHERE
     hisab = []
     ind = 0
     for x in cur:
-        # if ind !=0:
-        #     cur2.execute(f"SELECT SUM(DB-CR) FROM listdaily WHERE AccNo={x[0]} GROUP BY AccNo;")
 
-        #     result = cur2.fetchone()
-        #     if result:
-        #         balance = result[0]
-        #         print(balance)
-        #     else:
-        #         balance = 0  # Handle the case when there is no result
-        # else:
-        #     balance=0
         hisab.append({
             "key":ind,
             "AccNo":x[0],
             "AccName":x[1],
             "Cur":x[2],
             "Balance":x[14],
-            "set":x[6],
-            "category":x[7],
-            "Price":x[8],
-            "Contact":x[9],
-            "TaxNo":x[10],
-            "Address":x[12],
-            "tel":x[13],
-            "Mobile":x[14],
+            "set":x[3],
+            "category":x[4],
+            "Price":x[5],
+            "Contact":x[6],
+            "TaxNo":x[7],
+            "Address":x[9],
+            "tel":x[10],
+            "Mobile":x[11],
             "AccName2":x[12],
             "Fax":x[13],
         })
@@ -337,7 +297,7 @@ WHERE
              hisabBranches.append({
           
         })
-    print(hisab[0])
+   
     return{
     "Info":"authorized",
     "hisab":hisab,
@@ -348,10 +308,7 @@ WHERE
 
 @app.post("/accounting/filter/{limit}/")
 async def accFilter(data:dict,limit):
-    # if checkList(data["token"]) == "unauthorized":
-    #     return{"Info":"unauthorized"}
-    # elif checkList(data["token"]).split("|")[0] == "authorized":
-    #     username = checkList(data["token"]).split("|")[1]
+
     username = data["username"]
     
 
@@ -411,7 +368,7 @@ WHERE
             baseQuary="""SELECT SUM(ld.DB - ld.CR) AS Balance, ld.Dep,SUM(ld.DB),SUM(ld.CR),lh.* FROM listdaily ld LEFT JOIN( SELECT * FROM listhisab) lh ON ld.AccNo = lh.AccNo WHERE ld.AccNo IS NOT NULL """
         elif mydata["selectedBranch"] == "":
             #baseQuary = "SELECT * FROM hisabbr WHERE AccNo IS NOT NULL "
-            print("SALAM ALEKOM")
+            
             baseQuary="""SELECT SUM(ld.DB - ld.CR) AS Balance, ld.Dep,SUM(ld.DB),SUM(ld.CR),lh.* FROM listdaily ld LEFT JOIN( SELECT * FROM listhisab) lh ON ld.AccNo = lh.AccNo WHERE ld.AccNo IS NOT NULL AND ld.Dep IS NULL """
         else:
             #baseQuary = f"SELECT * FROM hisabbr WHERE Branch = \'{mydata['selectedBranch']}\' "
@@ -433,9 +390,9 @@ WHERE
         elif mydata["sAny"] == "Contains":
             baseQuary = baseQuary + str(f" AND ( {AccNo} like \'%{mydata['vAny']}%\' OR  {AccNo} like \'{mydata['vAny']}%\' OR  {AccNo} like \'%{mydata['vAny']}\' OR {AccName} like \'%{mydata['vAny']}%\'  OR {AccName} like \'{mydata['vAny']}%\'  OR {AccName} like \'%{mydata['vAny']}\' OR {Contact} like \'%{mydata['vAny']}%\'  OR {Contact} like \'{mydata['vAny']}%\'  OR {Contact} like \'%{mydata['vAny']}\' OR {Address}  like \'%{mydata['vAny']}%\'  OR {Address}  like \'{mydata['vAny']}%\'  OR {Address}  like \'%{mydata['vAny']}\' OR {tel} like \'%{mydata['vAny']}%\'  OR {tel} like \'{mydata['vAny']}%\'  OR {tel} like \'%{mydata['vAny']}\' OR {AccName2} like \'%{mydata['vAny']}%\'  OR {AccName2} like \'{mydata['vAny']}%\'  OR {AccName2} like \'%{mydata['vAny']}\' OR {Fax} like \'%{mydata['vAny']}%\' OR {Fax} like \'{mydata['vAny']}%\' OR {Fax} like \'%{mydata['vAny']}\' )  ")
     flag=0
-    print(filters)
+  
     for f in filters:
-        print(f['name'])
+        
         if mydata["branch"]:
             
             if f['name']!="Balance":
@@ -497,7 +454,7 @@ WHERE
         baseQuary = baseQuary + str(f"limit {limit};")
 
 
-    print(baseQuary)
+    
     cur.execute(baseQuary)
     
     r = list(cur)
@@ -551,7 +508,7 @@ WHERE
                 })
             ind = ind +1
 
-    print(mydata["branch"])
+  
     return{
        "Info":"authorized",
        "hisab":hisab,
@@ -563,12 +520,7 @@ WHERE
     
 @app.get("/moh/{uid}/Accounting/ItemsFromAccount/{id}/{limit}",status_code=200)
 async def StockStatement(uid:str, id:str, limit:int):
-    # print(uid)
-    # if checkList(uid) == "unauthorized":
-    #     return{"Info":"unauthorized"}
 
-    # elif checkList(uid).split("|")[0] == "authorized":
-    #     username = checkList(uid).split("|")[1]
     username=uid
     try:
             conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
@@ -663,14 +615,9 @@ async def StockStatement(uid:str, id:str, limit:int):
 
 @app.post("/moh/Accounting/ItemsFromAccount/Filter/",status_code=200)
 async def StockStatementFilter(data:dict):
-    print(data)
-    # if checkList(data["token"]) == "unauthorized":
-    #     return{"Info":"unauthorized"}
-
-    # elif checkList(data["token"]).split("|")[0] == "authorized":
-    #     username = checkList(data["token"]).split("|")[1]
+   
     username=data["username"]
-    print("hola")
+    
     try:
             conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
         #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
@@ -725,7 +672,7 @@ async def StockStatementFilter(data:dict):
         
         #item name and number search 
     if data["data"]["itm"] != "":
-        print(data["data"]["itm"])
+        
         baseQuary = baseQuary + f" and (itemno = \'{data['data']['itm']}\' or itemname = \'{data['data']['itm']}\') "
     
     if data["limit"]!="All":
@@ -813,11 +760,7 @@ async def AccStatement(uid:str ,id:str,limit:int):
         flag=1
     else:
         flag=0
-    # if checkList(uid) == "unauthorized":
-    #     return{"Info":"unauthorized"}
 
-    # elif checkList(uid).split("|")[0] == "authorized":
-    #     username = checkList(uid).split("|")[1]
     username=uid
     try:
             conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
@@ -857,7 +800,7 @@ async def AccStatement(uid:str ,id:str,limit:int):
             else:
                 f = lno
         except:
-            print("nothing")
+            print("exception")
       
         stat.append({
             "key":x,
@@ -916,8 +859,6 @@ async def AccStatement(uid:str ,id:str,limit:int):
     
 @app.post("/moh/Accounting/Statement/Filter/",status_code=200)
 async def AccStatementFilter(data:dict):
-    # if checkList(data["token"]) == "unauthorized":
-    #     return{"Info":"unauthorized"}
 
     username = data["username"]
     try:
@@ -930,7 +871,7 @@ async def AccStatementFilter(data:dict):
                 "msg":{e}})
     
     cur = conn.cursor()
-    print(str(data['id']).lower())
+    
     if "alldata" == str(data['id']).lower():
         baseQuary = f"SELECT * FROM listdaily WHERE AccNo IS NOT NULL"
     else:    
@@ -975,14 +916,14 @@ async def AccStatementFilter(data:dict):
         baseQuary = baseQuary + f" and dep = \'{data['data']['db']}\' "
     if data["limit"] != "All":
         limit=data["limit"]
-        print("honn fetit")
-        print(limit)
+        
+        
         baseQuary = baseQuary + f" ORDER BY Date desc,Time desc limit {limit}"
     else:
-        print("fetit")
+        
         baseQuary = baseQuary + " ORDER BY Date desc,Time desc "
 
-    print(baseQuary)
+    
     cur.execute(baseQuary)
     stat = []
     x= 0
@@ -998,9 +939,7 @@ async def AccStatementFilter(data:dict):
                 f = lno
         except:
             print("x hon:")
-            print(x)
-            print(vstat[2])
-            print(type(vstat[2]))
+            
             
       
         stat.append({
@@ -1038,11 +977,7 @@ async def AccStatementFilter(data:dict):
 
 @app.get("/moh/{uid}/Accounting/Balance/{id}/",status_code=200) #honn
 async def AccStatement(uid:str ,id:str):
-    # if checkList(uid) == "unauthorized":
-    #     return{"Info":"unauthorized"}
 
-    # elif checkList(uid).split("|")[0] == "authorized":
-    #     username = checkList(uid).split("|")[1]
     username=uid
     try:
             conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
@@ -1138,11 +1073,7 @@ async def StockStatement(uid:str, type:str, number:str):
 
 @app.get("/moh/{uid}/Accounting/Summery/{id}/{branch}/{branchSearch}",status_code=200)
 async def AccountingBranch(uid:str, id:str, branch:str, branchSearch:bool):
-    # if checkList(uid) == "unauthorized":
-    #     return{"Info":"unauthorized"}
 
-    # elif checkList(uid).split("|")[0] == "authorized":
-    #     username = checkList(uid).split("|")[1]
     username=uid
     try:
             conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
@@ -1209,11 +1140,7 @@ GROUP BY
 
 @app.get("/moh/{uid}/Accounting/InitialSummery/{id}/{branch}/{branchSearch}",status_code=200)
 async def AccountingBranch(uid:str, id:str,branch:str,branchSearch:bool):
-    # if checkList(uid) == "unauthorized":
-    #     return{"Info":"unauthorized"}
 
-    # elif checkList(uid).split("|")[0] == "authorized":
-    #     username = checkList(uid).split("|")[1]
     username=uid
     try:
             conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
@@ -1238,7 +1165,7 @@ FROM
 WHERE ld.AccNo = '{id}' GROUP BY InvType,ld.AccNo,BR """
     if branch!="Any" and branchSearch==True:
         basequery = basequery+ f"""HAVING BR = {branch};"""
-    print(basequery)
+    
     cur.execute(basequery)
 
 
@@ -1286,11 +1213,7 @@ WHERE ld.AccNo = '{id}' GROUP BY InvType,ld.AccNo,BR """
         
 @app.get("/moh/{uid}/Stock/{limit}/",status_code=200)
 async def Stock(uid:str,limit:int):
-    # if checkList(uid) == "unauthorized":
-    #     return{"Info":"unauthorized"}
 
-    # elif checkList(uid).split("|")[0] == "authorized":
-    #     username = checkList(uid).split("|")[1]
     username=uid
     try:
             conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
@@ -1324,7 +1247,7 @@ async def Stock(uid:str,limit:int):
             "split":" - ",
             "val":l[1],
         })
-        print(branches)
+        
     for x in qstock:
       
         goods.append({     
@@ -1377,10 +1300,7 @@ async def Stock(uid:str,limit:int):
 
 @app.post("/Stock/Filter/{limit}/")
 async def stockFilter(data:dict,limit):
-    # if checkList(data["token"]) == "unauthorized":
-    #     return{"Info":"unauthorized"}
-    # elif checkList(data["token"]).split("|")[0] == "authorized":
-    #     username = checkList(data["token"]).split("|")[1]
+
     username = data["username"]
     try:
             conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
@@ -1440,7 +1360,7 @@ async def stockFilter(data:dict,limit):
     
     if limit != "All":
         baseQuary = baseQuary + str(f"limit {limit} ;")
-    print(baseQuary)
+    
     cur.execute(baseQuary)
     qstock = list(cur)
     goods = []
@@ -1525,6 +1445,7 @@ async def stockFilter(data:dict,limit):
             "SPUnit" :x[28],
             })
             ukey = ukey + 1
+        
     cur.execute("SELECT DISTINCT `Branch`,Branch FROM `goodstrans` WHERE Branch is not null order by Branch asc ;")
 
 
@@ -1551,15 +1472,11 @@ async def stockFilter(data:dict,limit):
 
 @app.get("/moh/{uid}/Stock/Statement/{id}/{limit}",status_code=200)
 async def StockStatement(uid:str, id:str,limit):
-    # if checkList(uid) == "unauthorized":
-    #     return{"Info":"unauthorized"}
 
-    # elif checkList(uid).split("|")[0] == "authorized":
-    #     username = checkList(uid).split("|")[1]
     username=uid
     try:
             conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
-        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+        
     except mariadb.Error as e:       
             print(f"Error connecting to MariaDB Platform: {e}")  
             response.status_code = status.HTTP_401_UNAUTHORIZED
@@ -1573,7 +1490,7 @@ async def StockStatement(uid:str, id:str,limit):
         baseQuary = f"SELECT * FROM `goodstrans`   WHERE `ItemNo` = '{id}' "
     
     baseQuary = baseQuary + f"  ORDER BY `TDate` desc,`Time` desc limit {limit} "
-    print(baseQuary)
+   
     cur.execute(baseQuary)
     distype = []
     dbr = []
@@ -1640,11 +1557,7 @@ async def StockStatement(uid:str, id:str,limit):
 
 @app.post("/moh/Stock/Statement/Filter/",status_code=200)
 async def StockStatementFilter(data:dict):
-    # if checkList(data["token"]) == "unauthorized":
-    #     return{"Info":"unauthorized"}
 
-    # elif checkList(data["token"]).split("|")[0] == "authorized":
-    #     username = checkList(data["token"]).split("|")[1]
     username=data["username"]
     try:
             conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
@@ -1745,11 +1658,7 @@ async def StockStatementFilter(data:dict):
 
 @app.get("/moh/{uid}/Stock/Branch/{id}/",status_code=200)
 async def StockBranch(uid:str, id:str):
-    # if checkList(uid) == "unauthorized":
-    #     return{"Info":"unauthorized"}
 
-    # elif checkList(uid).split("|")[0] == "authorized":
-    #     username = checkList(uid).split("|")[1]
     username=uid
     try:
             conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
@@ -1783,11 +1692,7 @@ async def StockBranch(uid:str, id:str):
 
 @app.get("/moh/{uid}/Stock/Summery/{id}/{branch}/{branchSearch}",status_code=200)
 async def StockBranch(uid:str, id:str,branch:str,branchSearch:bool):
-    # if checkList(uid) == "unauthorized":
-    #     return{"Info":"unauthorized"}
 
-    # elif checkList(uid).split("|")[0] == "authorized":
-    #     username = checkList(uid).split("|")[1]
     username=uid
     try:
             conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
@@ -1878,7 +1783,6 @@ async def StockStatement(uid:str, type:str, number:str,limit):
         query = f"SELECT * FROM `goodstrans` WHERE RefType = '{type}' AND RefNo = '{number}' ORDER BY LN"
     else:
         query = f"SELECT * FROM `goodstrans` WHERE RefType = '{type}' AND RefNo = '{number}' ORDER BY LN limit {limit}"
-    print(query)
     cur.execute(query)
     double = []
     ind = 0
