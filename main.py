@@ -1840,7 +1840,7 @@ async def StockStatement(uid:str, type:str, number:str,limit):
         "ItemName":x[19],
         })
         ind = ind +1
-
+    print("index")
     return{
     "Info":"authorized",
     "double":double,
