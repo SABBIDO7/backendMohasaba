@@ -109,7 +109,7 @@ def removeList(index):
 #     return templates.TemplateResponse("index.html",{"request":req})
 
 @app.post("/moh/login/")
-async def login(compname:str = Form() ,username:str = Form(), password:str = Form() ):
+async def login(compname:str = Form() ,username:str = Form(), password:str = Form(), branch:str = Form()):
        
     # with open("C:\\scripts\\qr\\users.txt") as info2:
     #     userlist = info2.readlines()
@@ -128,7 +128,7 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
 
 #('paradox', 'hkm', '123', 'owner', 1)
     for users in userlist:
-            if users[0].lower() == compname.lower() and users[1].lower() == username.lower() and users[2] == password:
+            if users[0].lower() == compname.lower() and users[1].lower() == username.lower() and users[2] == password and users[8] == branch:
                 if str(users[4]) == "N": 
                     
                     return{"Info":"unauthorized",
@@ -143,9 +143,11 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
                         "name":users[1],
                         "token":uid,
                         "password":users[2],
+                        "branch":users[8]
                     }
+    print(branch)
     return{"Info":"unauthorized",
-            "msg":"Invalid Username or Password",
+            "msg":"Invalid Username or Password or branch",
          }
 
 @app.post("/INVOICE_DATA_SELECT/")
@@ -1846,71 +1848,71 @@ async def StockStatement(uid:str, type:str, number:str,limit):
     "double":double,
     }
 
-# @app.post("/moh/newInvoice/")
-# async def newInvoice(data:dict):
-#     username = data["compname"]
-#     try:
-#             conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
-#         #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
-#     except mariadb.Error as e:       
-#             print(f"Error connecting to MariaDB Platform: {e}")  
-#             response.status_code = status.HTTP_401_UNAUTHORIZED
-#             return({"Info":"unauthorized",
-#                     "msg":{e}})
+@app.post("/moh/newInvoice/")
+async def newInvoice(data:dict):
+    username = data["compname"]
+    try:
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+    except mariadb.Error as e:       
+            print(f"Error connecting to MariaDB Platform: {e}")  
+            response.status_code = status.HTTP_401_UNAUTHORIZED
+            return({"Info":"unauthorized",
+                    "msg":{e}})
     
-#     try:
-#         cur = conn.cursor()
+    try:
+        cur = conn.cursor()
         
-#         cdate = datetime.now()
+        cdate = datetime.now()
         
-#         print(cdate)
-#         ddate = str(cdate.date()).split("-")
-#         tdate = str(cdate.time()).split(":")
-#         refnumber = str(ddate[1])+str(ddate[2])+str(tdate[0])+str(tdate[1])+str(tdate[2]).split(".")[0]
+        print(cdate)
+        ddate = str(cdate.date()).split("-")
+        tdate = str(cdate.time()).split(":")
+        refnumber = str(ddate[1])+str(ddate[2])+str(tdate[0])+str(tdate[1])+str(tdate[2]).split(".")[0]
         
-#         cur.execute(f"""
-#                     INSERT INTO `{username}`.`tempinv` (`type`, `number`, `accno`, `accname`, `vdate`, `vtime`, `items`, `user`) 
-#                     VALUES ('{data["type"]}', '{refnumber}', '{data["accno"]}', '{data["accname"]}', '{str(cdate.date())}', '{str(cdate.time()).split(".")[0]}', '{data["items"]}', '{data["username"]}');
-#                     """)
+        cur.execute(f"""
+                    INSERT INTO `{username}`.`tempinv` (`type`, `number`, `accno`, `accname`, `vdate`, `vtime`, `items`, `user`) 
+                    VALUES ('{data["type"]}', '{refnumber}', '{data["accno"]}', '{data["accname"]}', '{str(cdate.date())}', '{str(cdate.time()).split(".")[0]}', '{data["items"]}', '{data["username"]}');
+                    """)
         
-#         items = str(data["items"]).split("!")
+        items = str(data["items"]).split("!")
         
-#         print(data)
+        print(data)
         
-#         idx = 1
+        idx = 1
         
-#         for item in items:
-#             if item == "":
-#                 pass
-#             else:
-#                 pdate = ddate[0] + "/" + ddate[1] + "/" + ddate[2]
-#                 att = str(item).split(";")
+        for item in items:
+            if item == "":
+                pass
+            else:
+                pdate = ddate[0] + "/" + ddate[1] + "/" + ddate[2]
+                att = str(item).split(";")
                 
-#                 total = float(att[1]) * float(att[2]) - (float(att[1]) * float(att[2]) * float(att[4]) ) / 100
+                total = float(att[1]) * float(att[2]) - (float(att[1]) * float(att[2]) * float(att[4]) ) / 100
                 
-#                 cur.execute(f"""
-#                             UPDATE {username}.goodsqty SET Qty = Qty - {float(att[1])}  WHERE  `ItemNo`='{att[0]}' AND `BR`='{att[3]}';
-#                             """)
+                cur.execute(f"""
+                            UPDATE {username}.goodsqty SET Qty = Qty - {float(att[1])}  WHERE  `ItemNo`='{att[0]}' AND `BR`='{att[3]}';
+                            """)
         
-#                 cur.execute(f"""
-#                             UPDATE {username}.goodsbr SET Qty1 = Qty1 - {float(att[1])}  WHERE  `ItemNoQ`='{att[0]}' AND `BR`='{att[3]}';
-#                             """)
+                cur.execute(f"""
+                            UPDATE {username}.goodsbr SET Qty1 = Qty1 - {float(att[1])}  WHERE  `ItemNoQ`='{att[0]}' AND `BR`='{att[3]}';
+                            """)
                 
-#                 cur.execute(f"""
-#                             INSERT INTO `{username}`.`goodstrans` (`RefType`, `RefNo`, `TDate`, `LN`, `ItemNo`, `Branch`, `PQty`, `Qty`, `UPrice`, `UFob`, `PQUnit`, `Disc`, `Weight`, `Notes`, `Tax`, `Total`, `AccNo`, `Disc100`, `AccName`, `ItemName`) 
+                cur.execute(f"""
+                            INSERT INTO `{username}`.`goodstrans` (`RefType`, `RefNo`, `TDate`, `LN`, `ItemNo`, `Branch`, `PQty`, `Qty`, `UPrice`, `UFob`, `PQUnit`, `Disc`, `Weight`, `Notes`, `Tax`, `Total`, `AccNo`, `Disc100`, `AccName`, `ItemName`) 
                             
-#                             VALUES ('{data['type']}', '{refnumber}', '{pdate}', '{idx}', '{att[0]}', '{att[3]}', '0', '{float(att[1])}', '{float(att[2])}', '0', '', '0', '0', '', '{float(att[5])}', '{total}', '{data["accno"]}', '{float(att[4])}', '{data["accname"]}', '');
+                            VALUES ('{data['type']}', '{refnumber}', '{pdate}', '{idx}', '{att[0]}', '{att[3]}', '0', '{float(att[1])}', '{float(att[2])}', '0', '', '0', '0', '', '{float(att[5])}', '{total}', '{data["accno"]}', '{float(att[4])}', '{data["accname"]}', '');
 
-#                             """)
-#             idx = idx + 1
-#         conn.commit()
+                            """)
+            idx = idx + 1
+        conn.commit()
         
-#         return{"Info":"authorized",
-#             "msg":"successfull"}
+        return{"Info":"authorized",
+            "msg":"successfull"}
 
-#     except Exception as e:
-#         return{"Info":"Failed",
-#             "msg":f"{str(e)}"}
+    except Exception as e:
+        return{"Info":"Failed",
+            "msg":f"{str(e)}"}
 
 
 
