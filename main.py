@@ -109,11 +109,8 @@ def removeList(index):
 #     return templates.TemplateResponse("index.html",{"request":req})
 
 @app.post("/moh/login/")
-async def login(compname:str = Form() ,username:str = Form(), password:str = Form(), branch:str = Form()):
-       
-    # with open("C:\\scripts\\qr\\users.txt") as info2:
-    #     userlist = info2.readlines()
-    
+async def login(compname:str = Form() ,username:str = Form(), password:str = Form()):
+           
     try:
             conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = "python")
     except mariadb.Error as e:       
@@ -128,26 +125,36 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
 
 #('paradox', 'hkm', '123', 'owner', 1)
     for users in userlist:
-            if users[0].lower() == compname.lower() and users[1].lower() == username.lower() and users[2] == password and users[8] == branch:
-                if str(users[4]) == "N": 
+            if users[0].upper() == compname.upper() and users[1].upper() == username.upper() and users[2] == password:
+                if str(users[4]) == "N" or str(users[4]) == "n": 
                     
                     return{"Info":"unauthorized",
                             "msg":"Please Check Your Subscription"
                             }         
                 else:  
                     uid = uuid.uuid1()
-                    
+                    if users[8] == "" or users[8] == None:
+                        Sbranch = "1"
+                    else:
+                        Sbranch = users[8].upper()
+                    if users[9] == "" or users[9] == None:
+                        Abranch = "1"
+                    else:
+                        Abranch = users[9].upper()
+                    print(Sbranch)
+                    print(Abranch)
                     return{
                         "Info":"authorized",
-                        "compname":users[0],
-                        "name":users[1],
+                        "compname":users[0].upper(),
+                        "name":users[1].upper(),
                         "token":uid,
                         "password":users[2],
-                        "branch":users[8]
+                        "Sbranch": Sbranch,
+                        "Abranch": Abranch
                     }
-    print(branch)
+
     return{"Info":"unauthorized",
-            "msg":"Invalid Username or Password or branch",
+            "msg":"Invalid Username or Password",
          }
 
 @app.post("/INVOICE_DATA_SELECT/")
@@ -167,26 +174,99 @@ async def getAccounts(data:dict):
 
     
     
-    baseQuary = "select * from "
+    
     
     if data["option"] == "Accounts":
-        baseQuary = baseQuary +" listhisab "
+        baseQuary ="SELECT * from listhisab "
         
         baseQuary = baseQuary +" WHERE accno not like '%ALLDATA%' "
         if data["value"] != "":
             baseQuary = baseQuary + f"""  and (accname LIKE '{data["value"]}%' or accname LIKE '%{data["value"]}' or accname LIKE '%{data["value"]}%' or accno LIKE '{data["value"]}%' or accno LIKE '%{data["value"]}' or accno LIKE '%{data["value"]}%' or tel LIKE '{data["value"]}%' or tel LIKE '%{data["value"]}' or tel LIKE '%{data["value"]}%')  """
     
     if data["option"] == "Items":
-        baseQuary = baseQuary +" goods "
+        baseQuary = "SELECT go.*,gt.AvQty FROM goods go LEFT JOIN(SELECT SUM(Qin-Qout) as AvQty,ItemNo FROM goodstrans GROUP BY ItemNo) gt ON go.ItemNo=gt.ItemNo "
         
-        baseQuary = baseQuary +" WHERE itemno not like '%ALLDATA%' "
+        baseQuary = baseQuary +" WHERE go.itemno not like '%ALLDATA%' "
         if data["value"] != "":
-            baseQuary = baseQuary + f"""  and (itemname LIKE '{data["value"]}%' or itemname LIKE '%{data["value"]}' or itemname LIKE '%{data["value"]}%' or itemno LIKE '{data["value"]}%' or itemno LIKE '%{data["value"]}' or itemno LIKE '%{data["value"]}%' or itemname2 LIKE '{data["value"]}%' or itemname2 LIKE '%{data["value"]}' or itemname2 LIKE '%{data["value"]}%')  """
+            baseQuary = baseQuary + f"""  and (itemname LIKE '{data["value"]}%' or itemname LIKE '%{data["value"]}' or itemname LIKE '%{data["value"]}%' or go.itemno LIKE '{data["value"]}%' or go.itemno LIKE '%{data["value"]}' or go.itemno LIKE '%{data["value"]}%' or itemname2 LIKE '{data["value"]}%' or itemname2 LIKE '%{data["value"]}' or itemname2 LIKE '%{data["value"]}%')  """
             
     baseQuary = baseQuary + " limit 100 "
-  
+    print(baseQuary)
+        
     cur.execute(baseQuary)
-    r = list(cur)
+    items_json = []
+    if data["option"] == "Items":
+        # Iterate over rows fetched from the cursor
+        for row in cur:
+            # Construct a dictionary for the current row
+            item_dict = {
+                "ItemNo": row[0],
+                "ItemName": row[1],
+                "ItemName2": row[2],
+                "MainNo": row[3],
+                "SetG": row[4],
+                "Category": row[5],
+                "Unit": row[6],
+                "Brand": row[7],
+                "Origin": row[8],
+                "Supplier": row[9],
+                "Sizeg": row[10],
+                "Color": row[11],
+                "Family": row[12],
+                "Groupg": row[13],
+                "Tax": row[14],
+                "SPrice1": row[15],
+                "Sprice2": row[16],
+                "SPrice3": row[17],
+                "Disc1": row[18],
+                "Disc2": row[19],
+                "Disc3": row[20],
+                "CostPrice": row[21],
+                "FobCost": row[22],
+                "AvPrice": row[23],
+                "BPUnit": row[24],
+                "PQty": row[25],
+                "PUnit": row[26],
+                "PQUnit": row[27],
+                "SPUnit": row[28],
+                "Sprice4": row[29],
+                "SPrice5": row[30],
+                "Disc4": row[31],
+                "Disc5": row[32],
+                "AvQty": row[33]
+            }
+            # Append the dictionary to the list
+            items_json.append(item_dict)
+    elif data["option"] == "Accounts":
+             # Iterate over the rows fetched from the database
+        for row in cur:
+            # Construct a dictionary for the current row
+            account_dict = {
+                "AccNo": row[0],
+                "AccName": row[1],
+                "Cur": row[2],
+                "SETA": row[3],
+                "Category": row[4],
+                "Price": row[5],
+                "Contact": row[6],
+                "TaxNo": row[7],
+                "SMan": row[8],
+                "Address": row[9],
+                "Tel": row[10],
+                "Mobile": row[11],
+                "AccName2": row[12],
+                "Fax": row[13]
+            }
+            # Append the dictionary to the results list
+            items_json.append(account_dict)
+
+
+
+    # Convert the list of dictionaries to JSON
+    
+   
+               
+    r = list(items_json)
     
     return{
         "Info":"authorized",
@@ -1850,9 +1930,10 @@ async def StockStatement(uid:str, type:str, number:str,limit):
 
 @app.post("/moh/newInvoice/")
 async def newInvoice(data:dict):
-    username = data["compname"]
+    compname = data["compname"]
+
     try:
-            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = compname) 
         #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
     except mariadb.Error as e:       
             print(f"Error connecting to MariaDB Platform: {e}")  
@@ -1861,54 +1942,41 @@ async def newInvoice(data:dict):
                     "msg":{e}})
     
     try:
-        cur = conn.cursor()
+        # cur =conn.cursor
+        # cur.execute(f"""
+        #             INSERT INTO `invnum` (`User1`, `RefType`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`) 
+        #             VALUES ('{data["username"]}', '{data["type"]}', '{data["Abranch"]}', '', '{data["accDate"]}', '{data["accTime"]}', '','','');
+        #             """)
         
-        cdate = datetime.now()
-        
-        print(cdate)
-        ddate = str(cdate.date()).split("-")
-        tdate = str(cdate.time()).split(":")
-        refnumber = str(ddate[1])+str(ddate[2])+str(tdate[0])+str(tdate[1])+str(tdate[2]).split(".")[0]
-        
-        cur.execute(f"""
-                    INSERT INTO `{username}`.`tempinv` (`type`, `number`, `accno`, `accname`, `vdate`, `vtime`, `items`, `user`) 
-                    VALUES ('{data["type"]}', '{refnumber}', '{data["accno"]}', '{data["accname"]}', '{str(cdate.date())}', '{str(cdate.time()).split(".")[0]}', '{data["items"]}', '{data["username"]}');
-                    """)
-        
-        items = str(data["items"]).split("!")
-        
-        print(data)
-        
-        idx = 1
-        
-        for item in items:
-            if item == "":
-                pass
-            else:
-                pdate = ddate[0] + "/" + ddate[1] + "/" + ddate[2]
-                att = str(item).split(";")
+        # for item in items:
+        #     if item == "":
+        #         pass
+        #     else:
+        #         pdate = ddate[0] + "/" + ddate[1] + "/" + ddate[2]
+        #         att = str(item).split(";")
                 
-                total = float(att[1]) * float(att[2]) - (float(att[1]) * float(att[2]) * float(att[4]) ) / 100
+        #         total = float(att[1]) * float(att[2]) - (float(att[1]) * float(att[2]) * float(att[4]) ) / 100
                 
-                cur.execute(f"""
-                            UPDATE {username}.goodsqty SET Qty = Qty - {float(att[1])}  WHERE  `ItemNo`='{att[0]}' AND `BR`='{att[3]}';
-                            """)
+        #         cur.execute(f"""
+        #                     UPDATE {compname}.goodsqty SET Qty = Qty - {float(att[1])}  WHERE  `ItemNo`='{att[0]}' AND `BR`='{att[3]}';
+        #                     """)
         
-                cur.execute(f"""
-                            UPDATE {username}.goodsbr SET Qty1 = Qty1 - {float(att[1])}  WHERE  `ItemNoQ`='{att[0]}' AND `BR`='{att[3]}';
-                            """)
+        #         cur.execute(f"""
+        #                     UPDATE {compname}.goodsbr SET Qty1 = Qty1 - {float(att[1])}  WHERE  `ItemNoQ`='{att[0]}' AND `BR`='{att[3]}';
+        #                     """)
                 
-                cur.execute(f"""
-                            INSERT INTO `{username}`.`goodstrans` (`RefType`, `RefNo`, `TDate`, `LN`, `ItemNo`, `Branch`, `PQty`, `Qty`, `UPrice`, `UFob`, `PQUnit`, `Disc`, `Weight`, `Notes`, `Tax`, `Total`, `AccNo`, `Disc100`, `AccName`, `ItemName`) 
+        #         cur.execute(f"""
+        #                     INSERT INTO `{compname}`.`goodstrans` (`RefType`, `RefNo`, `TDate`, `LN`, `ItemNo`, `Branch`, `PQty`, `Qty`, `UPrice`, `UFob`, `PQUnit`, `Disc`, `Weight`, `Notes`, `Tax`, `Total`, `AccNo`, `Disc100`, `AccName`, `ItemName`) 
                             
-                            VALUES ('{data['type']}', '{refnumber}', '{pdate}', '{idx}', '{att[0]}', '{att[3]}', '0', '{float(att[1])}', '{float(att[2])}', '0', '', '0', '0', '', '{float(att[5])}', '{total}', '{data["accno"]}', '{float(att[4])}', '{data["accname"]}', '');
+        #                     VALUES ('{data['type']}', '{refnumber}', '{pdate}', '{idx}', '{att[0]}', '{att[3]}', '0', '{float(att[1])}', '{float(att[2])}', '0', '', '0', '0', '', '{float(att[5])}', '{total}', '{data["accno"]}', '{float(att[4])}', '{data["accname"]}', '');
 
-                            """)
-            idx = idx + 1
-        conn.commit()
+        #                     """)
+        #     idx = idx + 1
+        # conn.commit()
         
-        return{"Info":"authorized",
-            "msg":"successfull"}
+        # return{"Info":"authorized",
+        #     "msg":"successfull"}
+        print(data)
 
     except Exception as e:
         return{"Info":"Failed",
