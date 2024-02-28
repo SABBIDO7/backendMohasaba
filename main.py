@@ -18,6 +18,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 
+# from fastapi import FastAPI, WebSocket
+# from starlette.responses import JSONResponse
+# from starlette.websockets import WebSocketDisconnect
+
 
 
 import time
@@ -141,6 +145,10 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
                         Abranch = "1"
                     else:
                         Abranch = users[9].upper()
+                    if users[10] == ""  or users[10] == None:
+                        SalePrice = 1
+                    else:
+                         SalePrice = users[10]
                     print(Sbranch)
                     print(Abranch)
                     return{
@@ -150,7 +158,8 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
                         "token":uid,
                         "password":users[2],
                         "Sbranch": Sbranch,
-                        "Abranch": Abranch
+                        "Abranch": Abranch,
+                        "SalePrice": SalePrice
                     }
 
     return{"Info":"unauthorized",
@@ -174,26 +183,39 @@ async def getAccounts(data:dict):
 
     
     
-    
+    flagA=0
+    flagI=0
     
     if data["option"] == "Accounts":
-        baseQuary ="SELECT * from listhisab "
+        baseQuary ="SELECT lh.*,Balance from listhisab lh"
         
-        baseQuary = baseQuary +" WHERE accno not like '%ALLDATA%' "
+        baseQuary = baseQuary +" LEFT JOIN(SELECT SUM(DB - CR) AS Balance,AccNo FROM listdaily GROUP BY AccNo) ld ON lh.AccNo= ld.AccNo WHERE lh.accno not like '%ALLDATA%' "
         if data["value"] != "":
-            baseQuary = baseQuary + f"""  and (accname LIKE '{data["value"]}%' or accname LIKE '%{data["value"]}' or accname LIKE '%{data["value"]}%' or accno LIKE '{data["value"]}%' or accno LIKE '%{data["value"]}' or accno LIKE '%{data["value"]}%' or tel LIKE '{data["value"]}%' or tel LIKE '%{data["value"]}' or tel LIKE '%{data["value"]}%')  """
+            cur.execute(baseQuary+f" and lh.accNo='{data["value"]}' limit 1000;")
+            if cur:
+                flagA=1
+            if flagA==0:
+                baseQuary = baseQuary + f"""  and (accname LIKE '{data["value"]}%' or accname LIKE '%{data["value"]}' or accname LIKE '%{data["value"]}%' or lh.accno LIKE '{data["value"]}%' or tel LIKE '{data["value"]}%' or tel LIKE '%{data["value"]}' or tel LIKE '%{data["value"]}%' or lh.contact LIKE '{data["value"]}%' or lh.contact LIKE '%{data["value"]}' or lh.contact LIKE '%{data["value"]}%' )  or lh.address  LIKE '{data["value"]}%' or lh.address  LIKE '%{data["value"]}' or lh.address  LIKE '%{data["value"]}%'"""
     
     if data["option"] == "Items":
-        baseQuary = "SELECT go.*,gt.AvQty FROM goods go LEFT JOIN(SELECT SUM(Qin-Qout) as AvQty,ItemNo FROM goodstrans GROUP BY ItemNo) gt ON go.ItemNo=gt.ItemNo "
+        baseQuary = "SELECT go.*,gt.AvQty,gt.Branch FROM goods go LEFT JOIN(SELECT SUM(Qin-Qout) as AvQty,ItemNo,Branch FROM goodstrans GROUP BY ItemNo,Branch) gt ON go.ItemNo=gt.ItemNo "
         
         baseQuary = baseQuary +" WHERE go.itemno not like '%ALLDATA%' "
         if data["value"] != "":
-            baseQuary = baseQuary + f"""  and (itemname LIKE '{data["value"]}%' or itemname LIKE '%{data["value"]}' or itemname LIKE '%{data["value"]}%' or go.itemno LIKE '{data["value"]}%' or go.itemno LIKE '%{data["value"]}' or go.itemno LIKE '%{data["value"]}%' or itemname2 LIKE '{data["value"]}%' or itemname2 LIKE '%{data["value"]}' or itemname2 LIKE '%{data["value"]}%')  """
+            cur.execute(baseQuary+f" and go.itemno='{data["value"]}' limit 1000;")
             
-    baseQuary = baseQuary + " limit 100 "
-    print(baseQuary)
+
+            if cur:
+                flagI=1
+            if flagI==0:
+                baseQuary = baseQuary + f"""  and (itemname LIKE '{data["value"]}%' or itemname LIKE '%{data["value"]}' or itemname LIKE '%{data["value"]}%' or go.itemno LIKE '{data["value"]}%' or itemname2 LIKE '{data["value"]}%' or itemname2 LIKE '%{data["value"]}' or itemname2 LIKE '%{data["value"]}%')  """
+
+    if flagI == 0 and flagA==0:
+        baseQuary = baseQuary + " limit 1000 "
         
-    cur.execute(baseQuary)
+        
+        cur.execute(baseQuary)
+    print(baseQuary)
     items_json = []
     if data["option"] == "Items":
         # Iterate over rows fetched from the cursor
@@ -233,7 +255,8 @@ async def getAccounts(data:dict):
                 "SPrice5": row[30],
                 "Disc4": row[31],
                 "Disc5": row[32],
-                "AvQty": row[33]
+                "AvQty": row[33],
+                "Branch": row[34]
             }
             # Append the dictionary to the list
             items_json.append(item_dict)
@@ -255,7 +278,8 @@ async def getAccounts(data:dict):
                 "Tel": row[10],
                 "Mobile": row[11],
                 "AccName2": row[12],
-                "Fax": row[13]
+                "Fax": row[13],
+                "Balance": row[14]
             }
             # Append the dictionary to the results list
             items_json.append(account_dict)
@@ -267,7 +291,7 @@ async def getAccounts(data:dict):
    
                
     r = list(items_json)
-    
+    print(r)
     return{
         "Info":"authorized",
         "opp":r
@@ -1984,3 +2008,39 @@ async def newInvoice(data:dict):
 
 
 
+# Assuming you have a database connection pool setup
+
+
+# @app.get("/inv")
+# async def fetch_inv():
+    # pool = await asyncpg.create_pool(database="donate", user="root", password="root", host="3307")
+    # async with pool.acquire() as conn:
+    #     query = "SELECT * FROM online"
+    #     rows = await conn.fetch(query)
+    #     return rows
+# async def listen_to_notifications(websocket: WebSocket):
+#     await websocket.accept()
+#     try:
+#         while True:
+#             data = await websocket.receive_text()
+#             print("Notification received:", data)
+#             # Fetch updated data from inv table and send it to the client
+#             # You can use the asyncpg library to interact with the PostgreSQL database
+#             # Example:
+#             # async with pool.acquire() as conn:
+#             #     query = "SELECT * FROM inv"
+#             #     rows = await conn.fetch(query)
+#             #     await websocket.send_json(rows)
+#             print("n")
+#     except WebSocketDisconnect:
+#         pass
+
+# @app.websocket("/ws")
+# async def websocket_endpoint(websocket: WebSocket):
+#     await listen_to_notifications(websocket)
+
+# @app.post("/notify")
+# async def notify():
+#     print("Received notification about operation:")
+#     # Handle the notification as needed
+#     return {"message": "Notification received"}
