@@ -169,7 +169,7 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
 @app.post("/INVOICE_DATA_SELECT/")
 async def getAccounts(data:dict):
     username=data["username"]
-
+    print(data)
     try:
         conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
         #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
@@ -181,19 +181,43 @@ async def getAccounts(data:dict):
     
     cur = conn.cursor()
 
-    
+
+    items_json = []
     
     flagA=0
     flagI=0
     
     if data["option"] == "Accounts":
         baseQuary ="SELECT lh.*,Balance from listhisab lh"
-        
+        print("lkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk")
         baseQuary = baseQuary +" LEFT JOIN(SELECT SUM(DB - CR) AS Balance,AccNo FROM listdaily GROUP BY AccNo) ld ON lh.AccNo= ld.AccNo WHERE lh.accno not like '%ALLDATA%' "
         if data["value"] != "":
             cur.execute(baseQuary+f" and lh.accNo='{data["value"]}' limit 1000;")
-            if cur:
+            A=0
+           
+            for row in cur:
+                account_dict = {
+                "AccNo": row[0],
+                "AccName": row[1],
+                "Cur": row[2],
+                "SETA": row[3],
+                "Category": row[4],
+                "Price": row[5],
+                "Contact": row[6],
+                "TaxNo": row[7],
+                "SMan": row[8],
+                "Address": row[9],
+                "Tel": row[10],
+                "Mobile": row[11],
+                "AccName2": row[12],
+                "Fax": row[13],
+                "Balance": row[14]
+                }
+            # Append the dictionary to the results list
+                items_json.append(account_dict)
                 flagA=1
+            print("rrrtttttt")
+            print(A)
             if flagA==0:
                 baseQuary = baseQuary + f"""  and (accname LIKE '{data["value"]}%' or accname LIKE '%{data["value"]}' or accname LIKE '%{data["value"]}%' or lh.accno LIKE '{data["value"]}%' or tel LIKE '{data["value"]}%' or tel LIKE '%{data["value"]}' or tel LIKE '%{data["value"]}%' or lh.contact LIKE '{data["value"]}%' or lh.contact LIKE '%{data["value"]}' or lh.contact LIKE '%{data["value"]}%' )  or lh.address  LIKE '{data["value"]}%' or lh.address  LIKE '%{data["value"]}' or lh.address  LIKE '%{data["value"]}%'"""
     
@@ -204,20 +228,62 @@ async def getAccounts(data:dict):
         if data["value"] != "":
             cur.execute(baseQuary+f" and go.itemno='{data["value"]}' limit 1000;")
             
-
-            if cur:
+          
+            for row in cur:
+                item_dict = {
+                "ItemNo": row[0],
+                "ItemName": row[1],
+                "ItemName2": row[2],
+                "MainNo": row[3],
+                "SetG": row[4],
+                "Category": row[5],
+                "Unit": row[6],
+                "Brand": row[7],
+                "Origin": row[8],
+                "Supplier": row[9],
+                "Sizeg": row[10],
+                "Color": row[11],
+                "Family": row[12],
+                "Groupg": row[13],
+                "Tax": row[14],
+                "SPrice1": row[15],
+                "Sprice2": row[16],
+                "SPrice3": row[17],
+                "Disc1": row[18],
+                "Disc2": row[19],
+                "Disc3": row[20],
+                "CostPrice": row[21],
+                "FobCost": row[22],
+                "AvPrice": row[23],
+                "BPUnit": row[24],
+                "PQty": row[25],
+                "PUnit": row[26],
+                "PQUnit": row[27],
+                "SPUnit": row[28],
+                "Sprice4": row[29],
+                "SPrice5": row[30],
+                "Disc4": row[31],
+                "Disc5": row[32],
+                "AvQty": row[33],
+                "Branch": row[34]
+                }
+            # Append the dictionary to the list
+                items_json.append(item_dict)
+              
                 flagI=1
+
             if flagI==0:
                 baseQuary = baseQuary + f"""  and (itemname LIKE '{data["value"]}%' or itemname LIKE '%{data["value"]}' or itemname LIKE '%{data["value"]}%' or go.itemno LIKE '{data["value"]}%' or itemname2 LIKE '{data["value"]}%' or itemname2 LIKE '%{data["value"]}' or itemname2 LIKE '%{data["value"]}%')  """
-
+    print(baseQuary)
     if flagI == 0 and flagA==0:
         baseQuary = baseQuary + " limit 1000 "
-        
+        print("nikotin")
         
         cur.execute(baseQuary)
+    print("vegeterin")
     print(baseQuary)
-    items_json = []
-    if data["option"] == "Items":
+    
+    if data["option"] == "Items" and flagI == 0:
         # Iterate over rows fetched from the cursor
         for row in cur:
             # Construct a dictionary for the current row
@@ -260,7 +326,7 @@ async def getAccounts(data:dict):
             }
             # Append the dictionary to the list
             items_json.append(item_dict)
-    elif data["option"] == "Accounts":
+    elif data["option"] == "Accounts" and flagA == 0:
              # Iterate over the rows fetched from the database
         for row in cur:
             # Construct a dictionary for the current row
@@ -291,7 +357,7 @@ async def getAccounts(data:dict):
    
                
     r = list(items_json)
-    print(r)
+  
     return{
         "Info":"authorized",
         "opp":r
@@ -1966,12 +2032,104 @@ async def newInvoice(data:dict):
                     "msg":{e}})
     
     try:
-        # cur =conn.cursor
-        # cur.execute(f"""
-        #             INSERT INTO `invnum` (`User1`, `RefType`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`) 
-        #             VALUES ('{data["username"]}', '{data["type"]}', '{data["Abranch"]}', '', '{data["accDate"]}', '{data["accTime"]}', '','','');
-        #             """)
+        cur =conn.cursor()
+        basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`) VALUES ('{data["username"]}', '{data["type"]}', '{data["accno"]}', '{data["Abranch"]}', '', '{data["accDate"]}', '{data["accTime"]}', '','',''); """
+        print(basequery)
+        cur.execute(basequery)
+
+        print(data)
+        print("succss")
+        ref_no = cur.lastrowid
+
+        print("RefNo:", ref_no)
         
+
+        for item in data["items"]:
+            basequery = f"""INSERT INTO `inv` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateT`, `TimeT`) VALUES ('{data["username"]}', '{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{item["DateT"]}', '{item["TimeT"]}'); """
+            print(basequery)
+            cur.execute(basequery)
+
+           
+            print("succss")
+            conn.commit()
+
+
+        return{"Info":"authorized",
+            "msg":"successfull"}
+        
+
+    except Exception as e:
+        print("failer")
+        return{"Info":"Failed",
+            "msg":f"{str(e)}"}
+
+@app.get("/moh/getInvoiceHistory/{username}/{user}/")
+async def getInvoiceHistory(username:str,user:str):
+    try:
+        conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+    #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+    except mariadb.Error as e:       
+        print(f"Error connecting to MariaDB Platform: {e}")  
+        response.status_code = status.HTTP_401_UNAUTHORIZED
+        return({"Info":"unauthorized",
+                "msg":{e}})
+    cur = conn.cursor()
+    baseQuery = f"""SELECT * FROM invnum WHERE (UserP!='P' or UserP!='p') AND User1='{user}'"""
+    cur.execute(baseQuery)
+    invoices = []
+    for invoice in cur:
+        inv={
+              'user':invoice[0],
+              'RefType': invoice[1],
+              'RefNo': invoice[2],
+              'AccNo':invoice[3],
+              'Branch': invoice[4],
+              'DateI': invoice[6]
+            }
+        invoices.append(inv)
+    print(invoices)
+    return{
+         "Info":"authorized",
+        "Invoices": invoices
+        } 
+
+@app.get("/moh/getInvoiceDetails/{username}/{user}/")
+async def getInvoiceHistory(username:str,user:str):
+    try:
+        conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+    #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+    except mariadb.Error as e:       
+        print(f"Error connecting to MariaDB Platform: {e}")  
+        response.status_code = status.HTTP_401_UNAUTHORIZED
+        return({"Info":"unauthorized",
+                "msg":{e}})
+    cur = conn.cursor()
+    baseQuery = f"""SELECT * FROM invnum WHERE (UserP!='P' or UserP!='p') AND User1='{user}'"""
+    cur.execute(baseQuery)
+    invoices = []
+    for invoice in cur:
+        inv={
+              'user':invoice[0],
+              'RefType': invoice[1],
+              'RefNo': invoice[2],
+              'AccNo':invoice[3],
+              'Branch': invoice[4],
+              'DateI': invoice[6]
+            }
+        invoices.append(inv)
+    print(invoices)
+    return{
+         "Info":"authorized",
+        "Invoices": invoices
+        } 
+
+
+
+
+
+
+
+
         # for item in items:
         #     if item == "":
         #         pass
@@ -1996,15 +2154,16 @@ async def newInvoice(data:dict):
 
         #                     """)
         #     idx = idx + 1
-        # conn.commit()
-        
-        # return{"Info":"authorized",
-        #     "msg":"successfull"}
-        print(data)
 
-    except Exception as e:
-        return{"Info":"Failed",
-            "msg":f"{str(e)}"}
+
+
+
+
+
+
+
+
+
 
 
 
