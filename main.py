@@ -1225,9 +1225,9 @@ async def StockStatement(uid:str, type:str, number:str):
         
     cur = conn.cursor()
 
-    cur.execute(f"SELECT * FROM `goodstrans` WHERE RefType = '{type}' AND RefNo = {number} ORDER BY LN")
-
-      
+    basequery = f"SELECT * FROM `goodstrans` WHERE RefType = '{type}' AND RefNo = {number} ORDER BY LN"
+    print(basequery)
+    cur.execute(basequery)
 
         
     double = []
@@ -1257,7 +1257,7 @@ async def StockStatement(uid:str, type:str, number:str):
             "ItemName":x[19],
         })
         ind = ind +1
-
+    print(double)
     return{
         "Info":"authorized",
         "double":double,
@@ -2021,6 +2021,7 @@ async def StockStatement(uid:str, type:str, number:str,limit):
 @app.post("/moh/newInvoice/")
 async def newInvoice(data:dict):
     compname = data["compname"]
+    print(data["items"])
 
     try:
             conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = compname) 
@@ -2033,11 +2034,18 @@ async def newInvoice(data:dict):
     
     try:
         cur =conn.cursor()
-        basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`) VALUES ('{data["username"]}', '{data["type"]}', '{data["accno"]}', '{data["Abranch"]}', '', '{data["accDate"]}', '{data["accTime"]}', '','',''); """
+        if data["accRefNo"]:
+                print('adimm')
+                cur.execute(f"DELETE  FROM invnum WHERE RefNo='{data["accRefNo"]}'")
+                conn.commit()
+                cur.execute(f"DELETE  FROM inv WHERE RefNo='{data["accRefNo"]}'")
+                conn.commit()
+                print("adimm dalato")
+        basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`) VALUES ('{data["username"]}', '{data["type"]}', '{data["accno"]}', '{data["accname"]}', '{data["Abranch"]}', '', '{data["accDate"]}', '{data["accTime"]}', '','',''); """
         print(basequery)
         cur.execute(basequery)
 
-        print(data)
+        #print(data)
         print("succss")
         ref_no = cur.lastrowid
 
@@ -2045,7 +2053,7 @@ async def newInvoice(data:dict):
         
 
         for item in data["items"]:
-            basequery = f"""INSERT INTO `inv` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateT`, `TimeT`) VALUES ('{data["username"]}', '{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{item["DateT"]}', '{item["TimeT"]}'); """
+            basequery = f"""INSERT INTO `inv` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateT`, `TimeT`) VALUES ('{data["username"]}', '{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{item["DateT"]}', '{item["TimeT"]}'); """
             print(basequery)
             cur.execute(basequery)
 
@@ -2093,34 +2101,64 @@ async def getInvoiceHistory(username:str,user:str):
         "Invoices": invoices
         } 
 
-@app.get("/moh/getInvoiceDetails/{username}/{user}/")
-async def getInvoiceHistory(username:str,user:str):
+@app.get("/moh/getInvoiceDetails/{username}/{user}/{InvoiceId}",status_code=200)
+async def getInvoiceDetails(username:str,user:str,InvoiceId:str):
     try:
         conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
-    #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
     except mariadb.Error as e:       
         print(f"Error connecting to MariaDB Platform: {e}")  
         response.status_code = status.HTTP_401_UNAUTHORIZED
         return({"Info":"unauthorized",
                 "msg":{e}})
     cur = conn.cursor()
-    baseQuery = f"""SELECT * FROM invnum WHERE (UserP!='P' or UserP!='p') AND User1='{user}'"""
+    print(InvoiceId)
+    baseQuery = f"""SELECT i.*,iv.* FROM inv i LEFT JOIN(SELECT * FROM invnum) iv ON i.RefNo = iv.RefNo WHERE i.User1='{user}' AND i.RefNo={InvoiceId}"""
     cur.execute(baseQuery)
     invoices = []
+    InvProfile=[]
+    flag=0
     for invoice in cur:
         inv={
-              'user':invoice[0],
-              'RefType': invoice[1],
-              'RefNo': invoice[2],
-              'AccNo':invoice[3],
-              'Branch': invoice[4],
-              'DateI': invoice[6]
+                "lno":invoice[3],
+                "no":invoice[4],
+                "name":invoice[5],
+                "branch": invoice[6],
+                "qty": invoice[7],
+                "uprice": invoice[10],
+                "discount": invoice[11],
+                "tax": invoice[12],
+                "TaxTotal": invoice[13],
+                "total": invoice[14],
+                "Note": invoice[15],
+                "qty": invoice[7],
+                "PQty":invoice[8],
+                "PUnit":invoice[9],
+                "DateT": invoice[16],
+                "TimeT":invoice[17],
             }
         invoices.append(inv)
+        if flag==0:
+            accInv={
+                # 'user':invoice[18],
+                # 'RefType': invoice[19],
+                'RefNo': invoice[20],
+                'id':invoice[21],
+                #'Branch': invoice[22],
+                # "TBranch":invoice[23],
+                'name': invoice[22],
+                "date": invoice[25],
+                "time": invoice[26],
+                # "DateP": invoice[26],
+                # "TimeP": invoice[27],
+                # "UserP": invoice[28]
+                }
+            InvProfile.append(accInv)
+        flag = flag+1   
     print(invoices)
     return{
          "Info":"authorized",
-        "Invoices": invoices
+        "Invoices": invoices,
+        "InvProfile":InvProfile
         } 
 
 
