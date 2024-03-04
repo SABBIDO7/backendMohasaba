@@ -169,7 +169,7 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
 @app.post("/INVOICE_DATA_SELECT/")
 async def getAccounts(data:dict):
     username=data["username"]
-    print(data)
+    #print(data)
     try:
         conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
         #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
@@ -189,7 +189,7 @@ async def getAccounts(data:dict):
     
     if data["option"] == "Accounts":
         baseQuary ="SELECT lh.*,Balance from listhisab lh"
-        print("lkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk")
+        #print("lkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk")
         baseQuary = baseQuary +" LEFT JOIN(SELECT SUM(DB - CR) AS Balance,AccNo FROM listdaily GROUP BY AccNo) ld ON lh.AccNo= ld.AccNo WHERE lh.accno not like '%ALLDATA%' "
         if data["value"] != "":
             cur.execute(baseQuary+f" and lh.accNo='{data["value"]}' limit 1000;")
@@ -216,8 +216,8 @@ async def getAccounts(data:dict):
             # Append the dictionary to the results list
                 items_json.append(account_dict)
                 flagA=1
-            print("rrrtttttt")
-            print(A)
+            #print("rrrtttttt")
+            #print(A)
             if flagA==0:
                 baseQuary = baseQuary + f"""  and (accname LIKE '{data["value"]}%' or accname LIKE '%{data["value"]}' or accname LIKE '%{data["value"]}%' or lh.accno LIKE '{data["value"]}%' or tel LIKE '{data["value"]}%' or tel LIKE '%{data["value"]}' or tel LIKE '%{data["value"]}%' or lh.contact LIKE '{data["value"]}%' or lh.contact LIKE '%{data["value"]}' or lh.contact LIKE '%{data["value"]}%' )  or lh.address  LIKE '{data["value"]}%' or lh.address  LIKE '%{data["value"]}' or lh.address  LIKE '%{data["value"]}%'"""
     
@@ -281,7 +281,7 @@ async def getAccounts(data:dict):
         
         cur.execute(baseQuary)
     print("vegeterin")
-    print(baseQuary)
+    #print(baseQuary)
     
     if data["option"] == "Items" and flagI == 0:
         # Iterate over rows fetched from the cursor
@@ -973,7 +973,7 @@ async def AccStatement(uid:str ,id:str,limit:int):
         else:
             cur.execute(f"SELECT * FROM `listdaily` WHERE `AccNo` = '{id}' ORDER BY `Date` desc, `Time` desc  ;")
 
-        
+     
     stat = []
     x= 0
     distype = []
@@ -2095,7 +2095,7 @@ async def getInvoiceHistory(username:str,user:str):
               'DateI': invoice[6]
             }
         invoices.append(inv)
-    print(invoices)
+    #print(invoices)
     return{
          "Info":"authorized",
         "Invoices": invoices
@@ -2111,7 +2111,7 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str):
         return({"Info":"unauthorized",
                 "msg":{e}})
     cur = conn.cursor()
-    print(InvoiceId)
+    #print(InvoiceId)
     baseQuery = f"""SELECT i.*,iv.* FROM inv i LEFT JOIN(SELECT * FROM invnum) iv ON i.RefNo = iv.RefNo WHERE i.User1='{user}' AND i.RefNo={InvoiceId}"""
     cur.execute(baseQuery)
     invoices = []
@@ -2154,7 +2154,7 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str):
                 }
             InvProfile.append(accInv)
         flag = flag+1   
-    print(invoices)
+    #print(invoices)
     return{
          "Info":"authorized",
         "Invoices": invoices,
