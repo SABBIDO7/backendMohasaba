@@ -2021,7 +2021,7 @@ async def StockStatement(uid:str, type:str, number:str,limit):
 @app.post("/moh/newInvoice/")
 async def newInvoice(data:dict):
     compname = data["compname"]
-    print(data["items"])
+    print(data)
 
     try:
             conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = compname) 
