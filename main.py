@@ -264,8 +264,9 @@ async def getAccounts(data:dict):
                 "SPrice5": row[30],
                 "Disc4": row[31],
                 "Disc5": row[32],
-                "AvQty": row[33],
-                "Branch": row[34]
+                "PPrice": row[33],
+                "AvQty": row[34],
+                "Branch": row[35]
                 }
             # Append the dictionary to the list
                 items_json.append(item_dict)
@@ -321,8 +322,9 @@ async def getAccounts(data:dict):
                 "SPrice5": row[30],
                 "Disc4": row[31],
                 "Disc5": row[32],
-                "AvQty": row[33],
-                "Branch": row[34]
+                "PPrice": row[33],
+                "AvQty": row[34],
+                "Branch": row[35]
             }
             # Append the dictionary to the list
             items_json.append(item_dict)
@@ -2053,7 +2055,9 @@ async def newInvoice(data:dict):
         
 
         for item in data["items"]:
-            basequery = f"""INSERT INTO `inv` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateT`, `TimeT`) VALUES ('{data["username"]}', '{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{item["DateT"]}', '{item["TimeT"]}'); """
+            if item["PPrice"]=="" or item["PPrice"]==None:
+                    item["PPrice"] = "P"
+            basequery = f"""INSERT INTO `inv` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateT`, `TimeT`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`) VALUES ('{data["username"]}', '{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{item["DateT"]}', '{item["TimeT"]}','{item["PPrice"]}','{item["PType"]}','{item["PQUnit"]}','{item["TotalPieces"]}'); """
             print(basequery)
             cur.execute(basequery)
 
@@ -2113,6 +2117,7 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str):
     cur = conn.cursor()
     #print(InvoiceId)
     baseQuery = f"""SELECT i.*,iv.* FROM inv i LEFT JOIN(SELECT * FROM invnum) iv ON i.RefNo = iv.RefNo WHERE i.User1='{user}' AND i.RefNo={InvoiceId}"""
+    print(baseQuery)
     cur.execute(baseQuery)
     invoices = []
     InvProfile=[]
@@ -2135,19 +2140,23 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str):
                 "PUnit":invoice[9],
                 "DateT": invoice[16],
                 "TimeT":invoice[17],
+                "PPrice":invoice[18],
+                "PType": invoice[19],
+                "PQUnit":invoice[20],
+                "TotalPieces":invoice[21]
             }
         invoices.append(inv)
         if flag==0:
             accInv={
                 # 'user':invoice[18],
                 # 'RefType': invoice[19],
-                'RefNo': invoice[20],
-                'id':invoice[21],
+                'RefNo': invoice[24],
+                'id':invoice[25],
                 #'Branch': invoice[22],
                 # "TBranch":invoice[23],
-                'name': invoice[22],
-                "date": invoice[25],
-                "time": invoice[26],
+                'name': invoice[26],
+                "date": invoice[29],
+                "time": invoice[30],
                 # "DateP": invoice[26],
                 # "TimeP": invoice[27],
                 # "UserP": invoice[28]
