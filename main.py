@@ -2057,7 +2057,7 @@ async def newInvoice(data:dict):
         for item in data["items"]:
             if item["PPrice"]=="" or item["PPrice"]==None:
                     item["PPrice"] = "P"
-            basequery = f"""INSERT INTO `inv` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateT`, `TimeT`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`) VALUES ('{data["username"]}', '{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{item["DateT"]}', '{item["TimeT"]}','{item["PPrice"]}','{item["PType"]}','{item["PQUnit"]}','{item["TotalPieces"]}'); """
+            basequery = f"""INSERT INTO `inv` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateT`, `TimeT`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`,`SPUnit`,`BPUnit`) VALUES ('{data["username"]}', '{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{item["DateT"]}', '{item["TimeT"]}','{item["PPrice"]}','{item["PType"]}','{item["PQUnit"]}','{item["TotalPieces"]}','{item["SPUnit"]}','{item["BPUnit"]}'); """
             print(basequery)
             cur.execute(basequery)
 
@@ -2143,20 +2143,22 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str):
                 "PPrice":invoice[18],
                 "PType": invoice[19],
                 "PQUnit":invoice[20],
-                "TotalPieces":invoice[21]
+                "TotalPieces":invoice[21],
+                "SPUnit": invoice[22],
+                "BPUnit":invoice[23]
             }
         invoices.append(inv)
         if flag==0:
             accInv={
                 # 'user':invoice[18],
                 # 'RefType': invoice[19],
-                'RefNo': invoice[24],
-                'id':invoice[25],
+                'RefNo': invoice[26],
+                'id':invoice[27],
                 #'Branch': invoice[22],
                 # "TBranch":invoice[23],
-                'name': invoice[26],
-                "date": invoice[29],
-                "time": invoice[30],
+                'name': invoice[28],
+                "date": invoice[30],
+                "time": invoice[32],
                 # "DateP": invoice[26],
                 # "TimeP": invoice[27],
                 # "UserP": invoice[28]
