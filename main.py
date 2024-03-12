@@ -2172,8 +2172,36 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str):
         "InvProfile":InvProfile
         } 
 
+@app.post("/moh/RemoveItemFromInvoiceHistory/")
+async def newInvoice(data:dict):
 
-
+    try:
+            print(data)
+            compname=data["compname"]
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = compname) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+    except mariadb.Error as e:       
+            print(f"Error connecting to MariaDB Platform: {e}")  
+            response.status_code = status.HTTP_401_UNAUTHORIZED
+            return({"Info":"unauthorized",
+                    "msg":{e}})
+    
+    try:
+        cur =conn.cursor()
+        item=data["item"]
+        basequery=f"""INSERT INTO `deletehistory` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateDeleted`, `TimeDeleted`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`,`SPUnit`,`BPUnit`,`DeleteType`) VALUES ('{data["username"]}', '{data["type"]}','{data["RefNo"]}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{data["DateDeleted"]}', '{data["TimeDeleted"]}','{item["PPrice"]}','{item["PType"]}','{item["PQUnit"]}','{item["TotalPieces"]}','{item["SPUnit"]}','{item["BPUnit"]}','{data["DeleteType"]}'); """
+        print(basequery)
+        cur.execute(basequery)
+        print("inserted")
+        cur.execute(f"DELETE  FROM inv WHERE RefNo='{data["RefNo"]}' AND ItemNo='{item["no"]}' AND LN='{item["lno"]}';")
+        conn.commit()
+        return({"Info":"authorized",
+                    "msg":"Success"})
+    except Exception as e:
+        print("failer")
+        print(str(e))
+        return{"Info":"Failed",
+        "msg":f"{str(e)}"}
 
 
 
