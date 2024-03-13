@@ -275,13 +275,13 @@ async def getAccounts(data:dict):
 
             if flagI==0:
                 baseQuary = baseQuary + f"""  and (itemname LIKE '{data["value"]}%' or itemname LIKE '%{data["value"]}' or itemname LIKE '%{data["value"]}%' or go.itemno LIKE '{data["value"]}%' or itemname2 LIKE '{data["value"]}%' or itemname2 LIKE '%{data["value"]}' or itemname2 LIKE '%{data["value"]}%')  """
-    print(baseQuary)
+
     if flagI == 0 and flagA==0:
         baseQuary = baseQuary + " limit 1000 "
-        print("nikotin")
+      
         
         cur.execute(baseQuary)
-    print("vegeterin")
+
     #print(baseQuary)
     
     if data["option"] == "Items" and flagI == 0:
@@ -2037,13 +2037,16 @@ async def newInvoice(data:dict):
     try:
         cur =conn.cursor()
         if data["accRefNo"]:
-                print('adimm')
-                cur.execute(f"DELETE  FROM invnum WHERE RefNo='{data["accRefNo"]}'")
-                conn.commit()
-                cur.execute(f"DELETE  FROM inv WHERE RefNo='{data["accRefNo"]}'")
-                conn.commit()
-                print("adimm dalato")
-        basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`) VALUES ('{data["username"]}', '{data["type"]}', '{data["accno"]}', '{data["accname"]}', '{data["Abranch"]}', '', '{data["accDate"]}', '{data["accTime"]}', '','',''); """
+            print('adimm')
+            cur.execute(f"DELETE  FROM invnum WHERE RefNo='{data["accRefNo"]}'")
+            conn.commit()
+            cur.execute(f"DELETE  FROM inv WHERE RefNo='{data["accRefNo"]}'")
+            conn.commit()
+            print("adimm dalato")
+        
+            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`,`RefNo`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`) VALUES ('{data["username"]}', '{data["type"]}','{data["accRefNo"]}', '{data["accno"]}', '{data["accname"]}', '{data["Abranch"]}', '', '{data["accDate"]}', '{data["accTime"]}', '','',''); """
+        else:
+            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`) VALUES ('{data["username"]}', '{data["type"]}', '{data["accno"]}', '{data["accname"]}', '{data["Abranch"]}', '', '{data["accDate"]}', '{data["accTime"]}', '','',''); """
         print(basequery)
         cur.execute(basequery)
 
@@ -2105,8 +2108,8 @@ async def getInvoiceHistory(username:str,user:str):
         "Invoices": invoices
         } 
 
-@app.get("/moh/getInvoiceDetails/{username}/{user}/{InvoiceId}",status_code=200)
-async def getInvoiceDetails(username:str,user:str,InvoiceId:str):
+@app.get("/moh/getInvoiceDetails/{username}/{user}/{InvoiceId}/{salePricePrefix}",status_code=200)
+async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:str):
     try:
         conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
     except mariadb.Error as e:       
@@ -2115,8 +2118,13 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str):
         return({"Info":"unauthorized",
                 "msg":{e}})
     cur = conn.cursor()
+    SalePrice = f'Sprice{salePricePrefix}'
+    print(SalePrice)
     #print(InvoiceId)
-    baseQuery = f"""SELECT i.*,iv.* FROM inv i LEFT JOIN(SELECT * FROM invnum) iv ON i.RefNo = iv.RefNo WHERE i.User1='{user}' AND i.RefNo={InvoiceId}"""
+    baseQuery = f"""SELECT i.*,iv.*,g.{SalePrice} FROM inv i 
+    LEFT JOIN(SELECT * FROM invnum) iv ON i.RefNo = iv.RefNo
+    LEFT JOIN (SELECT {SalePrice},ItemNo FROM goods) g ON i.ItemNo = g.ItemNo
+    WHERE i.User1='{user}' AND i.RefNo={InvoiceId}"""
     print(baseQuery)
     cur.execute(baseQuery)
     invoices = []
@@ -2145,7 +2153,8 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str):
                 "PQUnit":invoice[20],
                 "TotalPieces":invoice[21],
                 "SPUnit": invoice[22],
-                "BPUnit":invoice[23]
+                "BPUnit":invoice[23],
+                "InitialPrice":invoice[36]
             }
         invoices.append(inv)
         if flag==0:
@@ -2166,6 +2175,7 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str):
             InvProfile.append(accInv)
         flag = flag+1   
     #print(invoices)
+        print(InvProfile)
     return{
          "Info":"authorized",
         "Invoices": invoices,
@@ -2193,7 +2203,7 @@ async def newInvoice(data:dict):
         print(basequery)
         cur.execute(basequery)
         print("inserted")
-        cur.execute(f"DELETE  FROM inv WHERE RefNo='{data["RefNo"]}' AND ItemNo='{item["no"]}' AND LN='{item["lno"]}';")
+        cur.execute(f"DELETE  FROM inv WHERE  User1='{data["username"]}' AND RefType='{data["type"]}' AND RefNo='{data["RefNo"]}' AND ItemNo='{item["no"]}' AND LN='{item["lno"]}';")
         conn.commit()
         return({"Info":"authorized",
                     "msg":"Success"})
@@ -2203,7 +2213,39 @@ async def newInvoice(data:dict):
         return{"Info":"Failed",
         "msg":f"{str(e)}"}
 
+@app.post("/moh/DeleteInvoice/")
+async def deleteInvoice(data:dict):
 
+    try:
+            print(data)
+            compname=data["compname"]
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = compname) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+    except mariadb.Error as e:       
+            print(f"Error connecting to MariaDB Platform: {e}")  
+            response.status_code = status.HTTP_401_UNAUTHORIZED
+            return({"Info":"unauthorized",
+                    "msg":{e}})
+    
+    try:
+        cur =conn.cursor()
+        items=data["item"]
+        for item in items:
+            basequery=f"""INSERT INTO `deletehistory` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateDeleted`, `TimeDeleted`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`,`SPUnit`,`BPUnit`,`DeleteType`) VALUES ('{data["username"]}', '{data["type"]}','{data["RefNo"]}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{data["DateDeleted"]}', '{data["TimeDeleted"]}','{item["PPrice"]}','{item["PType"]}','{item["PQUnit"]}','{item["TotalPieces"]}','{item["SPUnit"]}','{item["BPUnit"]}','{data["DeleteType"]}'); """
+            print(basequery)
+            cur.execute(basequery)
+            cur.execute(f"DELETE  FROM inv WHERE User1='{data["username"]}' AND RefType='{data["type"]}' AND RefNo='{data["RefNo"]}' AND ItemNo='{item["no"]}' AND LN='{item["lno"]}';")
+        
+        print("inserted")
+        cur.execute(f"DELETE  FROM invnum WHERE User1='{data["username"]}' AND RefType='{data["type"]}' AND RefNo='{data["RefNo"]}' AND AccNo='{data["client"]["id"]}';")
+        conn.commit()
+        return({"Info":"authorized",
+                    "msg":"Success"})
+    except Exception as e:
+        print("failer")
+        print(str(e))
+        return{"Info":"Failed",
+        "msg":f"{str(e)}"}
 
 
 
