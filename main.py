@@ -148,9 +148,31 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
                     if users[10] == ""  or users[10] == None:
                         SalePrice = 1
                     else:
-                         SalePrice = users[10]
+                        SalePrice = users[10]
+                    if users[11] == "" or users[11]==None:
+                        DeleteInvoice="Y"
+                    else:
+                        DeleteInvoice=users[11].upper()
+                    if users[12] == "" or users[12]==None:
+                        DeleteItem="Y"
+                    else:
+                        DeleteItem=users[12].upper()
+                    if users[13] == "" or users[13]==None:
+                        Discount="Y"
+                    else:
+                        Discount=users[13].upper()
+                    if users[14] == "" or users[14]==None:
+                        Price="Y"
+                    else:
+                        Price=users[14].upper()
+                    if users[15] == "" or users[15]==None:
+                        CallInvoice="Y"
+                    else:
+                        CallInvoice=users[15].upper()
+                    
                     print(Sbranch)
                     print(Abranch)
+                    print(DeleteInvoice)
                     return{
                         "Info":"authorized",
                         "compname":users[0].upper(),
@@ -159,7 +181,14 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
                         "password":users[2],
                         "Sbranch": Sbranch,
                         "Abranch": Abranch,
-                        "SalePrice": SalePrice
+                        "SalePrice": SalePrice,
+                        "Permissions":{
+                            "DeleteInvoice":DeleteInvoice,
+                            "DeleteItem":DeleteItem,
+                            "Discount":Discount,
+                            "Price":Price,
+                            "CallInvoice":CallInvoice
+                        }
                     }
 
     return{"Info":"unauthorized",
@@ -2039,14 +2068,18 @@ async def newInvoice(data:dict):
         if data["accRefNo"]:
             print('adimm')
             cur.execute(f"DELETE  FROM invnum WHERE RefNo='{data["accRefNo"]}'")
-            conn.commit()
+            
             cur.execute(f"DELETE  FROM inv WHERE RefNo='{data["accRefNo"]}'")
+            
+            cur.execute(f"Delete FROM listdaily WHERE RefNo='{data["accRefNo"]}' AND RefType='{data["type"]}' ")
+            
+            cur.execute(f"DELETE FROM goodstrans WHERE RefNo='{data["accRefNo"]}' AND RefType='{data["type"]}' ")
             conn.commit()
-            print("adimm dalato")
         
             basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`,`RefNo`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`) VALUES ('{data["username"]}', '{data["type"]}','{data["accRefNo"]}', '{data["accno"]}', '{data["accname"]}', '{data["Abranch"]}', '', '{data["accDate"]}', '{data["accTime"]}', '','',''); """
         else:
             basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`) VALUES ('{data["username"]}', '{data["type"]}', '{data["accno"]}', '{data["accname"]}', '{data["Abranch"]}', '', '{data["accDate"]}', '{data["accTime"]}', '','',''); """
+
         print(basequery)
         cur.execute(basequery)
 
@@ -2055,6 +2088,15 @@ async def newInvoice(data:dict):
         ref_no = cur.lastrowid
 
         print("RefNo:", ref_no)
+        listdailyNote=f"Sales INVOICE RefType:SA_AP {ref_no} APP"
+        if data["invoiceTotal"]>0:
+            DB=data["invoiceTotal"]
+            CR=0
+        else:
+            DB=0
+            CR=(-1) * data["invoiceTotal"]
+        basequery3 = f"""INSERT INTO `listdaily` (`RefType`,`RefNo`,`LNo`, `AccNo`, `Dep`, `Date`, `Time`,`DB`,`CR`,`VDate`,`Job`,`Bank`,`CHQ`,`CHQ2`,`OppAcc`,`Notes`) VALUES ('{data["type"]}','{ref_no}','1.00', '{data["accno"]}', '{data["Abranch"]}', '{data["accDate"]}', '{data["accTime"]}',{DB},{CR},'{data["accDate"]}','','','','','{data["accno"]}','{listdailyNote}'); """
+        cur.execute(basequery3)
         
 
         for item in data["items"]:
@@ -2063,6 +2105,9 @@ async def newInvoice(data:dict):
             basequery = f"""INSERT INTO `inv` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateT`, `TimeT`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`,`SPUnit`,`BPUnit`) VALUES ('{data["username"]}', '{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{item["DateT"]}', '{item["TimeT"]}','{item["PPrice"]}','{item["PType"]}','{item["PQUnit"]}','{item["TotalPieces"]}','{item["SPUnit"]}','{item["BPUnit"]}'); """
             print(basequery)
             cur.execute(basequery)
+            basequery2 = f"""INSERT INTO `goodstrans` (`RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`,`Total`, `Notes`, `Branch`, `TDate`, `Time`,`PQUnit`,`UFob`,`Weight`,`AccNo`,`Disc100`,`AccName`,`Qin`,`Qout`,`Qod`) VALUES ('{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["TotalPieces"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{item["DateT"]}', '{item["TimeT"]}','{item["PQUnit"]}',0,0,'{data["accno"]}',0,'{data["accname"]}',0,'{item["TotalPieces"]}',0); """
+            print(basequery2)
+            cur.execute(basequery2)
 
            
             print("succss")
@@ -2176,6 +2221,8 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
         flag = flag+1   
     #print(invoices)
         print(InvProfile)
+    invoices = sorted(invoices, key=lambda x: x["lno"])
+    
     return{
          "Info":"authorized",
         "Invoices": invoices,
@@ -2204,6 +2251,14 @@ async def newInvoice(data:dict):
         cur.execute(basequery)
         print("inserted")
         cur.execute(f"DELETE  FROM inv WHERE  User1='{data["username"]}' AND RefType='{data["type"]}' AND RefNo='{data["RefNo"]}' AND ItemNo='{item["no"]}' AND LN='{item["lno"]}';")
+        cur.execute(f"DELETE  FROM goodstrans WHERE RefType='{data["type"]}' AND RefNo='{data["RefNo"]}' AND ItemNo='{item["no"]}' AND LN='{item["lno"]}';")
+        if data["invoiceTotal"]>0:
+            DB=data["invoiceTotal"]
+            CR=0
+        else:
+            DB=0
+            CR=(-1) * data["invoiceTotal"]
+        cur.execute(f"UPDATE listdaily SET DB={DB},CR={CR} WHERE RefType='{data["type"]}' AND RefNo='{data["RefNo"]}'")
         conn.commit()
         return({"Info":"authorized",
                     "msg":"Success"})
@@ -2238,6 +2293,10 @@ async def deleteInvoice(data:dict):
         
         print("inserted")
         cur.execute(f"DELETE  FROM invnum WHERE User1='{data["username"]}' AND RefType='{data["type"]}' AND RefNo='{data["RefNo"]}' AND AccNo='{data["client"]["id"]}';")
+
+        cur.execute(f"Delete FROM listdaily WHERE RefNo='{data["RefNo"]}' AND RefType='{data["type"]}' ")
+            
+        cur.execute(f"DELETE FROM goodstrans WHERE RefNo='{data["RefNo"]}' AND RefType='{data["type"]}' ")
         conn.commit()
         return({"Info":"authorized",
                     "msg":"Success"})
