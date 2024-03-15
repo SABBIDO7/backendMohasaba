@@ -2067,6 +2067,13 @@ async def newInvoice(data:dict):
         cur =conn.cursor()
         if data["accRefNo"]:
             print('adimm')
+
+            RemovedJson=data["RemovedItems"]
+            for fullitem in RemovedJson:
+                item=fullitem["item"]
+                
+                basequery=f"""INSERT INTO `deletehistory` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateDeleted`, `TimeDeleted`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`,`SPUnit`,`BPUnit`,`DeleteType`) VALUES ('{fullitem["username"]}', '{fullitem["type"]}','{fullitem["RefNo"]}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{fullitem["DateDeleted"]}', '{fullitem["TimeDeleted"]}','{item["PPrice"]}','{item["PType"]}','{item["PQUnit"]}','{item["TotalPieces"]}','{item["SPUnit"]}','{item["BPUnit"]}','{fullitem["DeleteType"]}'); """
+                cur.execute(basequery)
             cur.execute(f"DELETE  FROM invnum WHERE RefNo='{data["accRefNo"]}'")
             
             cur.execute(f"DELETE  FROM inv WHERE RefNo='{data["accRefNo"]}'")
@@ -2229,44 +2236,52 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
         "InvProfile":InvProfile
         } 
 
-@app.post("/moh/RemoveItemFromInvoiceHistory/")
-async def newInvoice(data:dict):
+# @app.post("/moh/RemoveItemFromInvoiceHistory/")
+# async def removeItemFromHistory(data:dict):
 
-    try:
-            print(data)
-            compname=data["compname"]
-            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = compname) 
-        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
-    except mariadb.Error as e:       
-            print(f"Error connecting to MariaDB Platform: {e}")  
-            response.status_code = status.HTTP_401_UNAUTHORIZED
-            return({"Info":"unauthorized",
-                    "msg":{e}})
+#     try:
+#             print(data)
+#             compname=data["compname"]
+#             conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = compname) 
+#         #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+#     except mariadb.Error as e:       
+#             print(f"Error connecting to MariaDB Platform: {e}")  
+#             response.status_code = status.HTTP_401_UNAUTHORIZED
+#             return({"Info":"unauthorized",
+#                     "msg":{e}})
     
-    try:
-        cur =conn.cursor()
-        item=data["item"]
-        basequery=f"""INSERT INTO `deletehistory` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateDeleted`, `TimeDeleted`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`,`SPUnit`,`BPUnit`,`DeleteType`) VALUES ('{data["username"]}', '{data["type"]}','{data["RefNo"]}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{data["DateDeleted"]}', '{data["TimeDeleted"]}','{item["PPrice"]}','{item["PType"]}','{item["PQUnit"]}','{item["TotalPieces"]}','{item["SPUnit"]}','{item["BPUnit"]}','{data["DeleteType"]}'); """
-        print(basequery)
-        cur.execute(basequery)
-        print("inserted")
-        cur.execute(f"DELETE  FROM inv WHERE  User1='{data["username"]}' AND RefType='{data["type"]}' AND RefNo='{data["RefNo"]}' AND ItemNo='{item["no"]}' AND LN='{item["lno"]}';")
-        cur.execute(f"DELETE  FROM goodstrans WHERE RefType='{data["type"]}' AND RefNo='{data["RefNo"]}' AND ItemNo='{item["no"]}' AND LN='{item["lno"]}';")
-        if data["invoiceTotal"]>0:
-            DB=data["invoiceTotal"]
-            CR=0
-        else:
-            DB=0
-            CR=(-1) * data["invoiceTotal"]
-        cur.execute(f"UPDATE listdaily SET DB={DB},CR={CR} WHERE RefType='{data["type"]}' AND RefNo='{data["RefNo"]}'")
-        conn.commit()
-        return({"Info":"authorized",
-                    "msg":"Success"})
-    except Exception as e:
-        print("failer")
-        print(str(e))
-        return{"Info":"Failed",
-        "msg":f"{str(e)}"}
+#     try:
+#         cur =conn.cursor()
+#         #cur.execute(f"SELECT * FROM inv WHERE RefNo='{data["RefNo"]}' AND ")
+#         item=data["item"]
+#         basequery=f"""INSERT INTO `deletehistory` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateDeleted`, `TimeDeleted`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`,`SPUnit`,`BPUnit`,`DeleteType`) VALUES ('{data["username"]}', '{data["type"]}','{data["RefNo"]}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{data["DateDeleted"]}', '{data["TimeDeleted"]}','{item["PPrice"]}','{item["PType"]}','{item["PQUnit"]}','{item["TotalPieces"]}','{item["SPUnit"]}','{item["BPUnit"]}','{data["DeleteType"]}'); """
+#         print(basequery)
+#         cur.execute(basequery)
+#         print("inserted")
+#         cur.execute(f"DELETE  FROM inv WHERE  User1='{data["username"]}' AND RefType='{data["type"]}' AND RefNo='{data["RefNo"]}' AND ItemNo='{item["no"]}' AND LN='{item["lno"]}';")
+#         cur.execute(f"DELETE  FROM goodstrans WHERE RefType='{data["type"]}' AND RefNo='{data["RefNo"]}' AND ItemNo='{item["no"]}' AND LN='{item["lno"]}';")
+#         if data["invoiceTotal"]>0:
+#             DB=data["invoiceTotal"]
+#             CR=0
+#         else:
+#             DB=0
+#             CR=(-1) * data["invoiceTotal"]
+#         cur.execute(f"UPDATE listdaily SET DB={DB},CR={CR} WHERE RefType='{data["type"]}' AND RefNo='{data["RefNo"]}'")
+#         conn.commit()
+
+
+
+
+#         return({"Info":"authorized",
+#                     "msg":"Success"})
+    
+
+
+    # except Exception as e:
+    #     print("failer")
+    #     print(str(e))
+    #     return{"Info":"Failed",
+    #     "msg":f"{str(e)}"}
 
 @app.post("/moh/DeleteInvoice/")
 async def deleteInvoice(data:dict):
