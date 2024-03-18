@@ -169,7 +169,34 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
                         CallInvoice="Y"
                     else:
                         CallInvoice=users[15].upper()
-                    
+                    if users[16] == "" or users[16]==None:
+                        SalesForm="Y"
+                    else:
+                        SalesForm=users[16].upper()
+                    if users[17] == "" or users[17]==None:
+                        SalesReturnForm="Y"
+                    else:
+                        SalesReturnForm=users[17].upper()
+                    if users[18] == "" or users[18]==None:
+                        OrderForm="Y"
+                    else:
+                        OrderForm=users[18].upper()
+                    if users[19] == "" or users[19]==None:
+                        PurchaseForm="Y"
+                    else:
+                        PurchaseForm=users[19].upper()
+                    if users[20] == "" or users[20]==None:
+                        PurchaseReturnForm="Y"
+                    else:
+                        PurchaseReturnForm=users[20].upper()
+                    if users[21] == "" or users[21]==None:
+                        BranchTransferForm="Y"
+                    else:
+                        BranchTransferForm=users[21].upper()
+                    if users[22] == "" or users[22]==None:
+                        SalesUnderZero="Y"
+                    else:
+                        SalesUnderZero=users[22].upper()
                     print(Sbranch)
                     print(Abranch)
                     print(DeleteInvoice)
@@ -187,7 +214,15 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
                             "DeleteItem":DeleteItem,
                             "Discount":Discount,
                             "Price":Price,
-                            "CallInvoice":CallInvoice
+                            "CallInvoice":CallInvoice,
+                            "SalesForm":SalesForm,
+                            "SalesReturnForm":SalesReturnForm,
+                            "OrderForm":OrderForm,
+                            "PurchaseForm":PurchaseForm,
+                            "PurchaseReturnForm":PurchaseReturnForm,
+                            "BranchTransferForm":BranchTransferForm,
+                            "SalesUnderZero":SalesUnderZero
+
                         }
                     }
 
@@ -249,6 +284,7 @@ async def getAccounts(data:dict):
             #print(A)
             if flagA==0:
                 baseQuary = baseQuary + f"""  and (accname LIKE '{data["value"]}%' or accname LIKE '%{data["value"]}' or accname LIKE '%{data["value"]}%' or lh.accno LIKE '{data["value"]}%' or tel LIKE '{data["value"]}%' or tel LIKE '%{data["value"]}' or tel LIKE '%{data["value"]}%' or lh.contact LIKE '{data["value"]}%' or lh.contact LIKE '%{data["value"]}' or lh.contact LIKE '%{data["value"]}%' )  or lh.address  LIKE '{data["value"]}%' or lh.address  LIKE '%{data["value"]}' or lh.address  LIKE '%{data["value"]}%'"""
+        print(baseQuary)
     
     if data["option"] == "Items":
         baseQuary = "SELECT go.*,gt.AvQty,gt.Branch FROM goods go LEFT JOIN(SELECT SUM(Qin-Qout) as AvQty,ItemNo,Branch FROM goodstrans GROUP BY ItemNo,Branch) gt ON go.ItemNo=gt.ItemNo "
@@ -1101,6 +1137,7 @@ async def AccStatementFilter(data:dict):
         baseQuary = f"SELECT * FROM listdaily  WHERE AccNo = {data['id']} "
     
     if data["data"]["dfrom"] != "":
+        print(data["data"]["dfrom"])
         datelst = str(data["data"]["dfrom"]).split("-")
         fdate = datelst[0] +"/"+ datelst[1] +"/"+ datelst[2]
         baseQuary = baseQuary + f" and date >= '{fdate}' "
@@ -1504,7 +1541,11 @@ async def Stock(uid:str,limit:int):
         "PUnit" :x[26],
         "PQUnit" :x[27],
         "SPUnit" :x[28],
-        "Qty":x[33],
+        "SPrice4" :x[29],
+        "SPrice5" :x[30],
+        "Disc1" :x[31],
+        "Disc2" :x[32],
+        "Qty":x[34],
         "branch":"",
         
         })
@@ -1629,8 +1670,12 @@ async def stockFilter(data:dict,limit):
             "PUnit" :x[26],
             "PQUnit" :x[27],
             "SPUnit" :x[28],
-            "Qty":x[33],
-            "branch":x[34],
+            "SPrice4" :x[29],
+            "SPrice5" :x[30],
+            "Disc1" :x[31],
+            "Disc2" :x[32],
+            "Qty":x[34],
+            "branch":x[35],
             })
             ind = ind +1
             
@@ -1806,6 +1851,7 @@ async def StockStatementFilter(data:dict):
         baseQuary = f"SELECT * FROM `goodstrans`   WHERE `ItemNo` = '{data['id']}' "
         
     if data["data"]["dfrom"] != "":
+        print(data["data"]["dfrom"])
         datelst = str(data["data"]["dfrom"]).split("-")
         fdate = datelst[0] +"/"+ datelst[1] +"/"+ datelst[2]
         baseQuary = baseQuary + f" and TDate >= '{fdate}' "
@@ -2112,7 +2158,20 @@ async def newInvoice(data:dict):
             basequery = f"""INSERT INTO `inv` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateT`, `TimeT`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`,`SPUnit`,`BPUnit`) VALUES ('{data["username"]}', '{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{item["DateT"]}', '{item["TimeT"]}','{item["PPrice"]}','{item["PType"]}','{item["PQUnit"]}','{item["TotalPieces"]}','{item["SPUnit"]}','{item["BPUnit"]}'); """
             print(basequery)
             cur.execute(basequery)
-            basequery2 = f"""INSERT INTO `goodstrans` (`RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`,`Total`, `Notes`, `Branch`, `TDate`, `Time`,`PQUnit`,`UFob`,`Weight`,`AccNo`,`Disc100`,`AccName`,`Qin`,`Qout`,`Qod`) VALUES ('{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["TotalPieces"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{item["DateT"]}', '{item["TimeT"]}','{item["PQUnit"]}',0,0,'{data["accno"]}',0,'{data["accname"]}',0,'{item["TotalPieces"]}',0); """
+            if data["type"]=="SA_AP" or data["type"]=="PR_AP" or data["type"]=="SAT_AP_AP":
+                Qin=0
+                Qout=item["TotalPieces"]
+                Qod=0
+            elif data["type"]=="PI_AP" or data["type"]=="SR_AP":
+                Qin=item["TotalPieces"]
+                Qout=0
+                Qod=0
+            elif data["type"]=="OD_AP":
+                Qin=0
+                Qout=0
+                Qod=item["TotalPieces"]
+
+            basequery2 = f"""INSERT INTO `goodstrans` (`RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`,`Total`, `Notes`, `Branch`, `TDate`, `Time`,`PQUnit`,`UFob`,`Weight`,`AccNo`,`Disc100`,`AccName`,`Qin`,`Qout`,`Qod`) VALUES ('{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["TotalPieces"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{item["DateT"]}', '{item["TimeT"]}','{item["PQUnit"]}',0,0,'{data["accno"]}',0,'{data["accname"]}','{Qin}','{Qout}','{Qod}'); """
             print(basequery2)
             cur.execute(basequery2)
 
@@ -2300,11 +2359,18 @@ async def deleteInvoice(data:dict):
     try:
         cur =conn.cursor()
         items=data["item"]
+        RemovedItems=data["RemovedItems"]
+        print("--------",RemovedItems)
         for item in items:
             basequery=f"""INSERT INTO `deletehistory` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateDeleted`, `TimeDeleted`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`,`SPUnit`,`BPUnit`,`DeleteType`) VALUES ('{data["username"]}', '{data["type"]}','{data["RefNo"]}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{data["DateDeleted"]}', '{data["TimeDeleted"]}','{item["PPrice"]}','{item["PType"]}','{item["PQUnit"]}','{item["TotalPieces"]}','{item["SPUnit"]}','{item["BPUnit"]}','{data["DeleteType"]}'); """
             print(basequery)
             cur.execute(basequery)
-            cur.execute(f"DELETE  FROM inv WHERE User1='{data["username"]}' AND RefType='{data["type"]}' AND RefNo='{data["RefNo"]}' AND ItemNo='{item["no"]}' AND LN='{item["lno"]}';")
+        if RemovedItems:
+            for item in RemovedItems:
+                basequery=f"""INSERT INTO `deletehistory` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateDeleted`, `TimeDeleted`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`,`SPUnit`,`BPUnit`,`DeleteType`) VALUES ('{data["username"]}', '{data["type"]}','{data["RefNo"]}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{data["DateDeleted"]}', '{data["TimeDeleted"]}','{item["PPrice"]}','{item["PType"]}','{item["PQUnit"]}','{item["TotalPieces"]}','{item["SPUnit"]}','{item["BPUnit"]}','{data["DeleteType"]}'); """
+                print(basequery)
+                cur.execute(basequery)
+        cur.execute(f"DELETE  FROM inv WHERE User1='{data["username"]}' AND RefType='{data["type"]}' AND RefNo='{data["RefNo"]}' ;")
         
         print("inserted")
         cur.execute(f"DELETE  FROM invnum WHERE User1='{data["username"]}' AND RefType='{data["type"]}' AND RefNo='{data["RefNo"]}' AND AccNo='{data["client"]["id"]}';")
