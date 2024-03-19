@@ -68,32 +68,15 @@ dbHost='80.81.158.76'
 # port1 = ip2[0].split("|")[1]
 
 
-
-activelist = [
-    "paradox|MySuperSecureToken|12/03/22:11:31|hkm|"
-]
-
-def addList(username,uid,compname):
-    # i = 0
-    # for i in range(0,len(activelist)):
-    #     if username == activelist[i].split("|")[0]:
-    #         removeList(i)
-
-    now = datetime.now()
-    current_time = now.strftime("%D:%H:%M")
-    final = str(compname) + "|" + str(uid) + "|" + str(current_time) + "|" + str(username) + "|"
-   
-    activelist.append(final)
-
-
-
-def removeList(index):   
-    activelist.remove(activelist[index]) 
-
     
             
-
-  
+def change_date_format(date_str):
+    # Parse the input date string
+    date_obj = datetime.strptime(date_str, '%d/%m/%Y')
+    
+    # Format the date object to the desired format
+    formatted_date = date_obj.strftime('%Y/%m/%d')
+    return formatted_date
         
 
 # @app.get("/")    
@@ -2148,7 +2131,10 @@ async def newInvoice(data:dict):
         else:
             DB=0
             CR=(-1) * data["invoiceTotal"]
-        basequery3 = f"""INSERT INTO `listdaily` (`RefType`,`RefNo`,`LNo`, `AccNo`, `Dep`, `Date`, `Time`,`DB`,`CR`,`VDate`,`Job`,`Bank`,`CHQ`,`CHQ2`,`OppAcc`,`Notes`) VALUES ('{data["type"]}','{ref_no}','1.00', '{data["accno"]}', '{data["Abranch"]}', '{data["accDate"]}', '{data["accTime"]}',{DB},{CR},'{data["accDate"]}','','','','','{data["accno"]}','{listdailyNote}'); """
+        print(data["accDate"])
+        accDate=change_date_format(data["accDate"])
+        print(accDate)
+        basequery3 = f"""INSERT INTO `listdaily` (`RefType`,`RefNo`,`LNo`, `AccNo`, `Dep`, `Date`, `Time`,`DB`,`CR`,`VDate`,`Job`,`Bank`,`CHQ`,`CHQ2`,`OppAcc`,`Notes`) VALUES ('{data["type"]}','{ref_no}','1.00', '{data["accno"]}', '{data["Abranch"]}', '{accDate}', '{data["accTime"]}',{DB},{CR},'{accDate}','','','','','{data["accno"]}','{listdailyNote}'); """
         cur.execute(basequery3)
         
 
@@ -2170,8 +2156,9 @@ async def newInvoice(data:dict):
                 Qin=0
                 Qout=0
                 Qod=item["TotalPieces"]
-
-            basequery2 = f"""INSERT INTO `goodstrans` (`RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`,`Total`, `Notes`, `Branch`, `TDate`, `Time`,`PQUnit`,`UFob`,`Weight`,`AccNo`,`Disc100`,`AccName`,`Qin`,`Qout`,`Qod`) VALUES ('{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["TotalPieces"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{item["DateT"]}', '{item["TimeT"]}','{item["PQUnit"]}',0,0,'{data["accno"]}',0,'{data["accname"]}','{Qin}','{Qout}','{Qod}'); """
+            print(item["DateT"])
+            dateT= change_date_format(item["DateT"])
+            basequery2 = f"""INSERT INTO `goodstrans` (`RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`,`Total`, `Notes`, `Branch`, `TDate`, `Time`,`PQUnit`,`UFob`,`Weight`,`AccNo`,`Disc100`,`AccName`,`Qin`,`Qout`,`Qod`) VALUES ('{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["TotalPieces"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{dateT}', '{item["TimeT"]}','{item["PQUnit"]}',0,0,'{data["accno"]}',0,'{data["accname"]}','{Qin}','{Qout}','{Qod}'); """
             print(basequery2)
             cur.execute(basequery2)
 
@@ -2232,9 +2219,11 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
     SalePrice = f'Sprice{salePricePrefix}'
     print(SalePrice)
     #print(InvoiceId)
-    baseQuery = f"""SELECT i.*,iv.*,g.{SalePrice} FROM inv i 
+    baseQuery = f"""SELECT i.*,iv.*,g.{SalePrice},ld.Balance,lh.Address FROM inv i 
     LEFT JOIN(SELECT * FROM invnum) iv ON i.RefNo = iv.RefNo
     LEFT JOIN (SELECT {SalePrice},ItemNo FROM goods) g ON i.ItemNo = g.ItemNo
+    LEFT JOIN (SELECT SUM(DB-CR) as Balance,AccNo FROM listdaily GROUP BY AccNo) ld ON iv.AccNo = ld.AccNo
+    LEFT JOIN (SELECT Address,AccNo FROM listhisab) lh ON iv.AccNo = lh.AccNo
     WHERE i.User1='{user}' AND i.RefNo={InvoiceId}"""
     print(baseQuery)
     cur.execute(baseQuery)
@@ -2271,7 +2260,7 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
         if flag==0:
             accInv={
                 # 'user':invoice[18],
-                # 'RefType': invoice[19],
+                'RefType': invoice[25],
                 'RefNo': invoice[26],
                 'id':invoice[27],
                 #'Branch': invoice[22],
@@ -2279,6 +2268,8 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
                 'name': invoice[28],
                 "date": invoice[30],
                 "time": invoice[32],
+                "balance":invoice[37],
+                "address":invoice[38]
                 # "DateP": invoice[26],
                 # "TimeP": invoice[27],
                 # "UserP": invoice[28]
@@ -2364,10 +2355,12 @@ async def deleteInvoice(data:dict):
         for item in items:
             basequery=f"""INSERT INTO `deletehistory` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateDeleted`, `TimeDeleted`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`,`SPUnit`,`BPUnit`,`DeleteType`) VALUES ('{data["username"]}', '{data["type"]}','{data["RefNo"]}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{data["DateDeleted"]}', '{data["TimeDeleted"]}','{item["PPrice"]}','{item["PType"]}','{item["PQUnit"]}','{item["TotalPieces"]}','{item["SPUnit"]}','{item["BPUnit"]}','{data["DeleteType"]}'); """
             print(basequery)
+            
             cur.execute(basequery)
+            print("sucess1")
         if RemovedItems:
             for item in RemovedItems:
-                basequery=f"""INSERT INTO `deletehistory` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateDeleted`, `TimeDeleted`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`,`SPUnit`,`BPUnit`,`DeleteType`) VALUES ('{data["username"]}', '{data["type"]}','{data["RefNo"]}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{data["DateDeleted"]}', '{data["TimeDeleted"]}','{item["PPrice"]}','{item["PType"]}','{item["PQUnit"]}','{item["TotalPieces"]}','{item["SPUnit"]}','{item["BPUnit"]}','{data["DeleteType"]}'); """
+                basequery=f"""INSERT INTO `deletehistory` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateDeleted`, `TimeDeleted`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`,`SPUnit`,`BPUnit`,`DeleteType`) VALUES ('{data["username"]}', '{data["type"]}','{data["RefNo"]}','{item["item"]["lno"]}', '{item["item"]["no"]}', '{item["item"]["name"]}','{item["item"]["qty"]}', '{item["item"]["PQty"]}', '{item["item"]["PUnit"]}', '{item["item"]["uprice"]}', '{item["item"]["discount"]}', '{item["item"]["tax"]}', '{item["item"]["TaxTotal"]}','{item["item"]["Total"]}','{item["item"]["Note"]}', '{item["item"]["branch"]}', '{data["DateDeleted"]}', '{data["TimeDeleted"]}','{item["item"]["PPrice"]}','{item["item"]["PType"]}','{item["item"]["PQUnit"]}','{item["item"]["TotalPieces"]}','{item["item"]["SPUnit"]}','{item["item"]["BPUnit"]}','{data["DeleteType"]}'); """
                 print(basequery)
                 cur.execute(basequery)
         cur.execute(f"DELETE  FROM inv WHERE User1='{data["username"]}' AND RefType='{data["type"]}' AND RefNo='{data["RefNo"]}' ;")
