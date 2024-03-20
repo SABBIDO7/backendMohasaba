@@ -475,7 +475,7 @@ WHERE
         ind = ind +1
 
 
-    cur.execute("SELECT DISTINCT `Branch`,`Branch` FROM `goodstrans` WHERE Branch is not null order by Branch asc;")   
+    cur.execute("SELECT DISTINCT `Branch`,`BranchName` FROM `header` WHERE Branch is not null order by Branch asc;")   
     branches = []
     branches.append({
         "key":"Any",
@@ -976,7 +976,7 @@ async def getBranches(uid:str):
                     "msg":{e}})
         
     cur = conn.cursor()
-    cur.execute("SELECT DISTINCT `Branch`,`Branch` FROM `goodstrans` WHERE Branch is not null order by Branch asc;")   
+    cur.execute("SELECT DISTINCT `Branch`,`BranchName` FROM `header` WHERE Branch is not null order by Branch asc;")   
     branches = []
 
     for br in cur:
@@ -1474,7 +1474,7 @@ async def Stock(uid:str,limit:int):
    
     goods = []
     ind = 0
-    cur.execute("SELECT DISTINCT `Branch`,Branch FROM `goodstrans` WHERE Branch is not null order by Branch asc ;")
+    cur.execute("SELECT DISTINCT `Branch`,`BranchName` FROM `header` WHERE Branch is not null order by Branch asc ;")
 
 
 
@@ -1615,7 +1615,7 @@ async def stockFilter(data:dict,limit):
     
     if limit != "All":
         baseQuary = baseQuary + str(f"limit {limit} ;")
-    
+    print(baseQuary)
     cur.execute(baseQuary)
     qstock = list(cur)
     goods = []
@@ -1670,9 +1670,9 @@ async def stockFilter(data:dict,limit):
         for x in qstock :
             bStock.append({
             "key":ukey,
-            "BR" :x[34],    
+            "BR" :x[35],    
             "BRName":x[2],   
-            "Qty" :x[33],
+            "Qty" :x[34],
             "ItemNo" :x[0],
             "ItemName" :x[1],
             "ItemName2" :x[2],
@@ -1705,7 +1705,7 @@ async def stockFilter(data:dict,limit):
             })
             ukey = ukey + 1
         
-    cur.execute("SELECT DISTINCT `Branch`,Branch FROM `goodstrans` WHERE Branch is not null order by Branch asc ;")
+    cur.execute("SELECT DISTINCT `Branch`,`BranchName` FROM `header` WHERE Branch is not null order by Branch asc ;")
 
 
 
@@ -2254,7 +2254,7 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
                 "TotalPieces":invoice[21],
                 "SPUnit": invoice[22],
                 "BPUnit":invoice[23],
-                "InitialPrice":invoice[36]
+                "InitialPrice":invoice[37]
             }
         invoices.append(inv)
         if flag==0:
@@ -2268,8 +2268,9 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
                 'name': invoice[28],
                 "date": invoice[30],
                 "time": invoice[32],
-                "balance":invoice[37],
-                "address":invoice[38]
+                "Cur": invoice[36],
+                "balance":invoice[38],
+                "address":invoice[39]
                 # "DateP": invoice[26],
                 # "TimeP": invoice[27],
                 # "UserP": invoice[28]
@@ -2379,6 +2380,67 @@ async def deleteInvoice(data:dict):
         print(str(e))
         return{"Info":"Failed",
         "msg":f"{str(e)}"}
+
+
+
+
+
+
+
+@app.get("/moh/getCompanyInfo/{compname}")
+async def getCompanyInfo(compname:str):
+
+    try:
+            
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = compname) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+    except mariadb.Error as e:       
+            print(f"Error connecting to MariaDB Platform: {e}")  
+            response.status_code = status.HTTP_401_UNAUTHORIZED
+            return({"Info":"unauthorized",
+                    "msg":{e}})
+    
+    try:
+        cur =conn.cursor()
+        cur.execute("SELECT * FROM header limit 1;")
+       
+        for info in cur:
+            
+            return {"Info":"authorized",
+                    "CompanyInfo":{
+                    "CompName":info[2],
+                    "CompAdd":info[3],
+                    "CompTell":info[4],
+                    "CompEmail":info[5],
+                    "CompTax": info[6],
+                    "mainCur":info[7],
+                    "Rate":info[8],
+                    "Cur1":info[9],
+                    "Cur2":info[10],
+                    "CASH":info[11],
+                    "VISA1":info[12],
+                    "VISA2":info[13],
+                    "VISA3":info[14],
+                    "VISA4":info[15],
+                    "VISA5":info[16],
+                    "VISA6":info[17]
+                }
+             }
+        
+    except Exception as e:
+        print("failer")
+        print(str(e))
+        return{"Info":"Failed",
+        "msg":f"{str(e)}"}
+
+
+
+
+
+
+
+
+
 
 
 
