@@ -2112,9 +2112,9 @@ async def newInvoice(data:dict):
             cur.execute(f"DELETE FROM goodstrans WHERE RefNo='{data["accRefNo"]}' AND RefType='{data["type"]}' ")
             conn.commit()
         
-            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`,`RefNo`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`) VALUES ('{data["username"]}', '{data["type"]}','{data["accRefNo"]}', '{data["accno"]}', '{data["accname"]}', '{data["Abranch"]}', '', '{data["accDate"]}', '{data["accTime"]}', '','',''); """
+            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`,`RefNo`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`) VALUES ('{data["username"]}', '{data["type"]}','{data["accRefNo"]}', '{data["accno"]}', '{data["accname"]}', '{data["Abranch"]}', '', '{data["accDate"]}', '{data["accTime"]}', '','','','{data["Cur"]}'); """
         else:
-            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`) VALUES ('{data["username"]}', '{data["type"]}', '{data["accno"]}', '{data["accname"]}', '{data["Abranch"]}', '', '{data["accDate"]}', '{data["accTime"]}', '','',''); """
+            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`) VALUES ('{data["username"]}', '{data["type"]}', '{data["accno"]}', '{data["accname"]}', '{data["Abranch"]}', '', '{data["accDate"]}', '{data["accTime"]}', '','','','{data["Cur"]}'); """
 
         print(basequery)
         cur.execute(basequery)
@@ -2124,43 +2124,53 @@ async def newInvoice(data:dict):
         ref_no = cur.lastrowid
 
         print("RefNo:", ref_no)
-        listdailyNote=f"Sales INVOICE RefType:SA_AP {ref_no} APP"
-        if data["invoiceTotal"]>0:
+        listdailyNote=f"INVOICE RefType:{data["type"]} {ref_no} APP"
+        if data["type"]!="DB_AP" and data["type"]!="CR_AP":
+            if data["invoiceTotal"]>0:
+                DB=data["invoiceTotal"]
+                CR=0
+            else:
+                DB=0
+                CR=(-1) * data["invoiceTotal"]
+        elif data["type"] == "DB_AP":
             DB=data["invoiceTotal"]
             CR=0
-        else:
+        elif data["type"] == "CR_AP":
             DB=0
-            CR=(-1) * data["invoiceTotal"]
-        print(data["accDate"])
+            CR=data["invoiceTotal"]
         accDate=change_date_format(data["accDate"])
-        print(accDate)
         basequery3 = f"""INSERT INTO `listdaily` (`RefType`,`RefNo`,`LNo`, `AccNo`, `Dep`, `Date`, `Time`,`DB`,`CR`,`VDate`,`Job`,`Bank`,`CHQ`,`CHQ2`,`OppAcc`,`Notes`) VALUES ('{data["type"]}','{ref_no}','1.00', '{data["accno"]}', '{data["Abranch"]}', '{accDate}', '{data["accTime"]}',{DB},{CR},'{accDate}','','','','','{data["accno"]}','{listdailyNote}'); """
         cur.execute(basequery3)
-        
+        print("failer 3 pass")
 
         for item in data["items"]:
             # if item["PPrice"]=="" or item["PPrice"]==None:
             #         item["PPrice"] = "P"
-            basequery = f"""INSERT INTO `inv` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateT`, `TimeT`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`,`SPUnit`,`BPUnit`) VALUES ('{data["username"]}', '{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{item["DateT"]}', '{item["TimeT"]}','{item["PPrice"]}','{item["PType"]}','{item["PQUnit"]}','{item["TotalPieces"]}','{item["SPUnit"]}','{item["BPUnit"]}'); """
+            if data["type"]=="DB_AP" or data["type"]=="CR_AP":
+                print(item)
+                basequery = f"""INSERT INTO `inv` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateT`, `TimeT`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`,`SPUnit`,`BPUnit`) VALUES ('{data["username"]}', '{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{item["DateT"]}', '{item["TimeT"]}','{item["PPrice"]}','{item["PType"]}','{item["PQUnit"]}','{item["TotalPieces"]}','{item["SPUnit"]}','{item["BPUnit"]}'); """
+            else:
+                basequery = f"""INSERT INTO `inv` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateT`, `TimeT`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`,`SPUnit`,`BPUnit`) VALUES ('{data["username"]}', '{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{item["DateT"]}', '{item["TimeT"]}','{item["PPrice"]}','{item["PType"]}','{item["PQUnit"]}','{item["TotalPieces"]}','{item["SPUnit"]}','{item["BPUnit"]}'); """
             print(basequery)
             cur.execute(basequery)
-            if data["type"]=="SA_AP" or data["type"]=="PR_AP" or data["type"]=="SAT_AP_AP":
-                Qin=0
-                Qout=item["TotalPieces"]
-                Qod=0
-            elif data["type"]=="PI_AP" or data["type"]=="SR_AP":
-                Qin=item["TotalPieces"]
-                Qout=0
-                Qod=0
-            elif data["type"]=="OD_AP":
-                Qin=0
-                Qout=0
-                Qod=item["TotalPieces"]
-            print(item["DateT"])
-            dateT= change_date_format(item["DateT"])
-            basequery2 = f"""INSERT INTO `goodstrans` (`RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`,`Total`, `Notes`, `Branch`, `TDate`, `Time`,`PQUnit`,`UFob`,`Weight`,`AccNo`,`Disc100`,`AccName`,`Qin`,`Qout`,`Qod`) VALUES ('{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["TotalPieces"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{dateT}', '{item["TimeT"]}','{item["PQUnit"]}',0,0,'{data["accno"]}',0,'{data["accname"]}','{Qin}','{Qout}','{Qod}'); """
-            print(basequery2)
-            cur.execute(basequery2)
+            if data["type"]!="DB_AP" and data["type"]!="CR_AP":
+                if data["type"]=="SA_AP" or data["type"]=="PR_AP" or data["type"]=="SAT_AP_AP":
+                    Qin=0
+                    Qout=item["TotalPieces"]
+                    Qod=0
+                elif data["type"]=="PI_AP" or data["type"]=="SR_AP":
+                    Qin=item["TotalPieces"]
+                    Qout=0
+                    Qod=0
+                elif data["type"]=="OD_AP":
+                    Qin=0
+                    Qout=0
+                    Qod=item["TotalPieces"]
+                print(item["DateT"])
+                dateT= change_date_format(item["DateT"])
+                basequery2 = f"""INSERT INTO `goodstrans` (`RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`,`Total`, `Notes`, `Branch`, `TDate`, `Time`,`PQUnit`,`UFob`,`Weight`,`AccNo`,`Disc100`,`AccName`,`Qin`,`Qout`,`Qod`) VALUES ('{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["TotalPieces"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{dateT}', '{item["TimeT"]}','{item["PQUnit"]}',0,0,'{data["accno"]}',0,'{data["accname"]}','{Qin}','{Qout}','{Qod}'); """
+                print(basequery2)
+                cur.execute(basequery2)
 
            
             print("succss")
