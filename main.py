@@ -180,6 +180,10 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
                         SalesUnderZero="Y"
                     else:
                         SalesUnderZero=users[22].upper()
+                    if users[23] == "" or users[23]==None:
+                        ChangeBranch="Y"
+                    else:
+                        ChangeBranch=users[23].upper()
                     print(Sbranch)
                     print(Abranch)
                     print(DeleteInvoice)
@@ -204,7 +208,8 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
                             "PurchaseForm":PurchaseForm,
                             "PurchaseReturnForm":PurchaseReturnForm,
                             "BranchTransferForm":BranchTransferForm,
-                            "SalesUnderZero":SalesUnderZero
+                            "SalesUnderZero":SalesUnderZero,
+                            "ChangeBranch":ChangeBranch
 
                         }
                     }
@@ -2125,32 +2130,32 @@ async def newInvoice(data:dict):
 
         print("RefNo:", ref_no)
         listdailyNote=f"INVOICE RefType:{data["type"]} {ref_no} APP"
-        if data["type"]!="DB_AP" and data["type"]!="CR_AP":
-            if data["invoiceTotal"]>0:
+        if data["type"] !="OD_AP": #IF NOT OD INSERT IN LISTDAILY
+            if data["type"]!="DB_AP" and data["type"]!="CR_AP":
+                if data["invoiceTotal"]>0:
+                    DB=data["invoiceTotal"]
+                    CR=0
+                else:
+                    DB=0
+                    CR=(-1) * data["invoiceTotal"]
+            elif data["type"] == "DB_AP":
                 DB=data["invoiceTotal"]
                 CR=0
-            else:
+            elif data["type"] == "CR_AP":
                 DB=0
-                CR=(-1) * data["invoiceTotal"]
-        elif data["type"] == "DB_AP":
-            DB=data["invoiceTotal"]
-            CR=0
-        elif data["type"] == "CR_AP":
-            DB=0
-            CR=data["invoiceTotal"]
-        accDate=change_date_format(data["accDate"])
-        basequery3 = f"""INSERT INTO `listdaily` (`RefType`,`RefNo`,`LNo`, `AccNo`, `Dep`, `Date`, `Time`,`DB`,`CR`,`VDate`,`Job`,`Bank`,`CHQ`,`CHQ2`,`OppAcc`,`Notes`) VALUES ('{data["type"]}','{ref_no}','1.00', '{data["accno"]}', '{data["Abranch"]}', '{accDate}', '{data["accTime"]}',{DB},{CR},'{accDate}','','','','','{data["accno"]}','{listdailyNote}'); """
-        cur.execute(basequery3)
-        print("failer 3 pass")
+                CR=data["invoiceTotal"]
+            print("accDateh",data["accDate"])
+            accDate=change_date_format(data["accDate"])
+            basequery3 = f"""INSERT INTO `listdaily` (`RefType`,`RefNo`,`LNo`, `AccNo`, `Dep`, `Date`, `Time`,`DB`,`CR`,`VDate`,`Job`,`Bank`,`CHQ`,`CHQ2`,`OppAcc`,`Notes`) VALUES ('{data["type"]}','{ref_no}','1.00', '{data["accno"]}', '{data["Abranch"]}', '{accDate}', '{data["accTime"]}',{DB},{CR},'{accDate}','','','','','{data["accno"]}','{listdailyNote}'); """
+            cur.execute(basequery3)
+            print("failer 3 pass")
 
         for item in data["items"]:
             # if item["PPrice"]=="" or item["PPrice"]==None:
             #         item["PPrice"] = "P"
-            if data["type"]=="DB_AP" or data["type"]=="CR_AP":
-                print(item)
-                basequery = f"""INSERT INTO `inv` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateT`, `TimeT`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`,`SPUnit`,`BPUnit`) VALUES ('{data["username"]}', '{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{item["DateT"]}', '{item["TimeT"]}','{item["PPrice"]}','{item["PType"]}','{item["PQUnit"]}','{item["TotalPieces"]}','{item["SPUnit"]}','{item["BPUnit"]}'); """
-            else:
-                basequery = f"""INSERT INTO `inv` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateT`, `TimeT`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`,`SPUnit`,`BPUnit`) VALUES ('{data["username"]}', '{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{item["DateT"]}', '{item["TimeT"]}','{item["PPrice"]}','{item["PType"]}','{item["PQUnit"]}','{item["TotalPieces"]}','{item["SPUnit"]}','{item["BPUnit"]}'); """
+            
+            print(item)
+            basequery = f"""INSERT INTO `inv` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateT`, `TimeT`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`,`SPUnit`,`BPUnit`) VALUES ('{data["username"]}', '{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{item["DateT"]}', '{item["TimeT"]}','{item["PPrice"]}','{item["PType"]}','{item["PQUnit"]}','{item["TotalPieces"]}','{item["SPUnit"]}','{item["BPUnit"]}'); """
             print(basequery)
             cur.execute(basequery)
             if data["type"]!="DB_AP" and data["type"]!="CR_AP":
@@ -2229,11 +2234,11 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
     SalePrice = f'Sprice{salePricePrefix}'
     print(SalePrice)
     #print(InvoiceId)
-    baseQuery = f"""SELECT i.*,iv.*,g.{SalePrice},ld.Balance,lh.Address FROM inv i 
+    baseQuery = f"""SELECT i.*,iv.*,g.{SalePrice},ld.Balance,lh.Address,lh.Cur FROM inv i 
     LEFT JOIN(SELECT * FROM invnum) iv ON i.RefNo = iv.RefNo
     LEFT JOIN (SELECT {SalePrice},ItemNo FROM goods) g ON i.ItemNo = g.ItemNo
     LEFT JOIN (SELECT SUM(DB-CR) as Balance,AccNo FROM listdaily GROUP BY AccNo) ld ON iv.AccNo = ld.AccNo
-    LEFT JOIN (SELECT Address,AccNo FROM listhisab) lh ON iv.AccNo = lh.AccNo
+    LEFT JOIN (SELECT Address,Cur,AccNo FROM listhisab) lh ON iv.AccNo = lh.AccNo
     WHERE i.User1='{user}' AND i.RefNo={InvoiceId}"""
     print(baseQuery)
     cur.execute(baseQuery)
@@ -2276,11 +2281,12 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
                 #'Branch': invoice[22],
                 # "TBranch":invoice[23],
                 'name': invoice[28],
-                "date": invoice[30],
+                "date": invoice[31],
                 "time": invoice[32],
                 "Cur": invoice[36],
                 "balance":invoice[38],
-                "address":invoice[39]
+                "address":invoice[39],
+                "cur":invoice[40]
                 # "DateP": invoice[26],
                 # "TimeP": invoice[27],
                 # "UserP": invoice[28]
