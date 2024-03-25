@@ -275,8 +275,12 @@ async def getAccounts(data:dict):
         print(baseQuary)
     
     if data["option"] == "Items":
-        baseQuary = "SELECT go.*,gt.AvQty,gt.Branch FROM goods go LEFT JOIN(SELECT SUM(Qin-Qout) as AvQty,ItemNo,Branch FROM goodstrans GROUP BY ItemNo,Branch) gt ON go.ItemNo=gt.ItemNo "
         
+        if data["SATFromBranch"] != "N" and data["SATToBranch"] !="N":
+            baseQuary = f"SELECT go.*,gt.AvQty,gt.Branch FROM goods go LEFT JOIN(SELECT SUM(Qin-Qout) as AvQty,ItemNo,Branch FROM goodstrans  WHERE Branch={data["SATFromBranch"]} GROUP BY ItemNo,Branch) gt ON go.ItemNo=gt.ItemNo "
+            
+        else:
+            baseQuary = "SELECT go.*,gt.AvQty,gt.Branch FROM goods go LEFT JOIN(SELECT SUM(Qin-Qout) as AvQty,ItemNo,Branch FROM goodstrans GROUP BY ItemNo,Branch) gt ON go.ItemNo=gt.ItemNo "
         baseQuary = baseQuary +" WHERE go.itemno not like '%ALLDATA%' "
         if data["value"] != "":
             cur.execute(baseQuary+f" and go.itemno='{data["value"]}' limit 1000;")
@@ -2099,8 +2103,14 @@ async def newInvoice(data:dict):
     
     try:
         cur =conn.cursor()
+        if data["type"] =="SAT_AP":
+            Branch=data["SATFromBranch"]
+            TBranch=data["SATToBranch"]
+        else:
+            Branch=data["Abranch"]
+            TBranch=''
         if data["accRefNo"]:
-            print('adimm')
+            print('adimmmmm')
 
             RemovedJson=data["RemovedItems"]
             for fullitem in RemovedJson:
@@ -2117,9 +2127,9 @@ async def newInvoice(data:dict):
             cur.execute(f"DELETE FROM goodstrans WHERE RefNo='{data["accRefNo"]}' AND RefType='{data["type"]}' ")
             conn.commit()
         
-            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`,`RefNo`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`) VALUES ('{data["username"]}', '{data["type"]}','{data["accRefNo"]}', '{data["accno"]}', '{data["accname"]}', '{data["Abranch"]}', '', '{data["accDate"]}', '{data["accTime"]}', '','','','{data["Cur"]}','{data["Rate"]}'); """
+            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`,`RefNo`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`) VALUES ('{data["username"]}', '{data["type"]}','{data["accRefNo"]}', '{data["accno"]}', '{data["accname"]}', '{Branch}', {TBranch}, '{data["accDate"]}', '{data["accTime"]}', '','','','{data["Cur"]}','{data["Rate"]}'); """
         else:
-            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`) VALUES ('{data["username"]}', '{data["type"]}', '{data["accno"]}', '{data["accname"]}', '{data["Abranch"]}', '', '{data["accDate"]}', '{data["accTime"]}', '','','','{data["Cur"]}','{data["Rate"]}'); """
+            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`) VALUES ('{data["username"]}', '{data["type"]}', '{data["accno"]}', '{data["accname"]}', '{Branch}', {TBranch}, '{data["accDate"]}', '{data["accTime"]}', '','','','{data["Cur"]}','{data["Rate"]}'); """
 
         print(basequery)
         cur.execute(basequery)
@@ -2130,8 +2140,8 @@ async def newInvoice(data:dict):
 
         print("RefNo:", ref_no)
         listdailyNote=f"INVOICE RefType:{data["type"]} {ref_no} APP"
-        if data["type"] !="OD_AP": #IF NOT OD INSERT IN LISTDAILY
-            if data["type"]!="DB_AP" and data["type"]!="CR_AP":
+        if data["type"] !="OD_AP data": #IF NOT OD INSERT IN LISTDAILY
+            if data["type"]!="DB_AP" and data["type"]!="CR_AP" and data["type"]!="SAT_AP":
                 if data["invoiceTotal"]>0:
                     DB=data["invoiceTotal"]
                     CR=0
@@ -2141,7 +2151,7 @@ async def newInvoice(data:dict):
             
                 print("accDateh",data["accDate"])
                 accDate=change_date_format(data["accDate"])
-                basequery3 = f"""INSERT INTO `listdaily` (`RefType`,`RefNo`,`LNo`, `AccNo`, `Dep`, `Date`, `Time`,`DB`,`CR`,`VDate`,`Job`,`Bank`,`CHQ`,`CHQ2`,`OppAcc`,`Notes`) VALUES ('{data["type"]}','{ref_no}','1.00', '{data["accno"]}', '{data["Abranch"]}', '{accDate}', '{data["accTime"]}',{DB},{CR},'{accDate}','','','','','{data["accno"]}','{listdailyNote}'); """
+                basequery3 = f"""INSERT INTO `listdaily` (`RefType`,`RefNo`,`LNo`, `AccNo`, `Dep`, `Date`, `Time`,`DB`,`CR`,`VDate`,`Job`,`Bank`,`CHQ`,`CHQ2`,`OppAcc`,`Notes`) VALUES ('{data["type"]}','{ref_no}','1.00', '{data["accno"]}', '{Branch}', '{accDate}', '{data["accTime"]}',{DB},{CR},'{accDate}','','','','','{data["accno"]}','{listdailyNote}'); """
                 cur.execute(basequery3)
                 print("failer 3 pass")
 
@@ -2169,6 +2179,11 @@ async def newInvoice(data:dict):
                 print(item["DateT"])
                 dateT= change_date_format(item["DateT"])
                 basequery2 = f"""INSERT INTO `goodstrans` (`RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`,`Total`, `Notes`, `Branch`, `TDate`, `Time`,`PQUnit`,`UFob`,`Weight`,`AccNo`,`Disc100`,`AccName`,`Qin`,`Qout`,`Qod`) VALUES ('{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["TotalPieces"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{dateT}', '{item["TimeT"]}','{item["PQUnit"]}',0,0,'{data["accno"]}',0,'{data["accname"]}','{Qin}','{Qout}','{Qod}'); """
+                if data["type"]=="SAT_AP":
+                    Qin=item["TotalPieces"]
+                    Qout=0
+                    Qod=0
+                    basequeryQin = f"""INSERT INTO `goodstrans` (`RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`,`Total`, `Notes`, `Branch`, `TDate`, `Time`,`PQUnit`,`UFob`,`Weight`,`AccNo`,`Disc100`,`AccName`,`Qin`,`Qout`,`Qod`) VALUES ('{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["TotalPieces"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{dateT}', '{item["TimeT"]}','{item["PQUnit"]}',0,0,'{data["accno"]}',0,'{data["accname"]}','{Qin}','{Qout}','{Qod}'); """
                 print(basequery2)
             else:
                 accDate=change_date_format(item["DateT"])
@@ -2178,8 +2193,10 @@ async def newInvoice(data:dict):
                 if data["type"] == "CR_AP":
                     DB=0
                     CR=item["Total"]
-                basequery2 = f"""INSERT INTO `listdaily` (`RefType`,`RefNo`,`LNo`, `AccNo`, `Dep`, `Date`, `Time`,`DB`,`CR`,`VDate`,`Job`,`Bank`,`CHQ`,`CHQ2`,`OppAcc`,`Notes`) VALUES ('{data["type"]}','{ref_no}','{item["lno"]}', '{data["accno"]}', '{data["Abranch"]}', '{accDate}', '{item["TimeT"]}',{DB},{CR},'{accDate}','','','','','{data["accno"]}','{listdailyNote}'); """
-                cur.execute(basequery2)
+                basequery2 = f"""INSERT INTO `listdaily` (`RefType`,`RefNo`,`LNo`, `AccNo`, `Dep`, `Date`, `Time`,`DB`,`CR`,`VDate`,`Job`,`Bank`,`CHQ`,`CHQ2`,`OppAcc`,`Notes`) VALUES ('{data["type"]}','{ref_no}','{item["lno"]}', '{data["accno"]}', '{Branch}', '{accDate}', '{item["TimeT"]}',{DB},{CR},'{accDate}','','','','','{data["accno"]}','{listdailyNote}'); """
+            cur.execute(basequery2)
+            if data["type"]=="SAT_AP":
+                 cur.execute(basequeryQin)
 
            
             print("succss")
@@ -2282,8 +2299,8 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
                 'RefType': invoice[25],
                 'RefNo': invoice[26],
                 'id':invoice[27],
-                #'Branch': invoice[22],
-                # "TBranch":invoice[23],
+                'Branch': invoice[29],
+                "TBranch":invoice[30],
                 'name': invoice[28],
                 "date": invoice[31],
                 "time": invoice[32],
