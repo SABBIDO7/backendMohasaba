@@ -2472,6 +2472,41 @@ async def getCompanyInfo(compname:str):
         "msg":f"{str(e)}"}
 
 
+@app.get("/moh/{compname}/ItemStockDetails/Double/{itemNo}/",status_code=200)
+async def StockStatement(compname:str, itemNo:str):
+
+    username=compname
+    print(itemNo)
+    try:
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+    except mariadb.Error as e:       
+            print(f"Error connecting to MariaDB Platform: {e}")  
+            response.status_code = status.HTTP_401_UNAUTHORIZED
+            return({"Info":"unauthorized",
+                    "msg":{e}})
+    
+    cur = conn.cursor()
+
+    query = f"SELECT Branch,SUM(Qin-Qout) FROM `goodstrans` WHERE ItemNo = '{itemNo}' GROUP BY Branch"
+    cur.execute(query)
+    stockDetails = []
+    ind = 0
+    for x in cur:
+        
+        stockDetails.append({     
+        "key":ind,                 
+        "Branch" :x[0] ,  
+        "Qty" :x[1]
+        })
+        ind = ind +1
+    print(stockDetails)
+    print("index")
+    return{
+    "Info":"authorized",
+    "stockDetails":stockDetails,
+    "ItemNo":itemNo
+    }
 
 
 
