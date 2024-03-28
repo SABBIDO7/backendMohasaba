@@ -232,12 +232,14 @@ async def getAccounts(data:dict):
                     "msg":{e}})
     
     cur = conn.cursor()
+    cur2 = conn.cursor()
 
 
     items_json = []
     
     flagA=0
     flagI=0
+    ItemsByBranchQuery=""
     
     if data["option"] == "Accounts":
         baseQuary ="SELECT lh.*,Balance from listhisab lh"
@@ -275,18 +277,38 @@ async def getAccounts(data:dict):
         print(baseQuary)
     
     if data["option"] == "Items":
-        
+        branches=[]
+        getbranches="SELECT DISTINCT Branch FROM header WHERE Branch IS NOT NULL"
+        cur2.execute(getbranches)
+        Columns=""
+        for row in cur2:
+            branches.append(row[0])
+        print(branches)
+        for idx, branch in enumerate(branches):
+            if idx == len(branches) - 1:
+                Columns += f"SUM(CASE WHEN gt.Branch = '{branch}' THEN gt.AvQty ELSE 0 END) AS Br{branch}"
+            else:
+                Columns += f"SUM(CASE WHEN gt.Branch = '{branch}' THEN gt.AvQty ELSE 0 END) AS Br{branch},"
+
         if data["SATFromBranch"] != "N" and data["SATToBranch"] !="N":
-            baseQuary = f"SELECT go.*,gt.AvQty,gt.Branch FROM goods go LEFT JOIN(SELECT SUM(Qin-Qout) as AvQty,ItemNo,Branch FROM goodstrans  WHERE Branch={data["SATFromBranch"]} GROUP BY ItemNo,Branch) gt ON go.ItemNo=gt.ItemNo "
+            baseQuary = f"SELECT go.*,{Columns} FROM goods go LEFT JOIN(SELECT SUM(Qin-Qout) as AvQty,ItemNo,Branch FROM goodstrans  WHERE Branch={data["SATFromBranch"]} GROUP BY ItemNo,Branch) gt ON go.ItemNo=gt.ItemNo "
             
         else:
-            baseQuary = "SELECT go.*,gt.AvQty,gt.Branch FROM goods go LEFT JOIN(SELECT SUM(Qin-Qout) as AvQty,ItemNo,Branch FROM goodstrans GROUP BY ItemNo,Branch) gt ON go.ItemNo=gt.ItemNo "
-        baseQuary = baseQuary +" WHERE go.itemno not like '%ALLDATA%' "
-        if data["value"] != "":
-            cur.execute(baseQuary+f" and go.itemno='{data["value"]}' limit 1000;")
+            baseQuary = f"SELECT go.*,{Columns} FROM goods go LEFT JOIN(SELECT SUM(Qin-Qout) as AvQty,ItemNo,Branch FROM goodstrans GROUP BY ItemNo,Branch) gt ON go.ItemNo=gt.ItemNo "
+        #ItemsByBranchQuery=f"SELECT Branch,Sum(Qin-Qout) as BrQty FROM goodstrans WHERE ItemNo='{data["value"]}'"
+        if data["value"] =="":
+            baseQuary = baseQuary +" WHERE go.itemno not like '%ALLDATA%' GROUP BY go.itemno"
+            print(baseQuary)
+        elif data["value"] != "":
+            cur.execute(baseQuary+f" WHERE go.itemno not like '%ALLDATA%' and go.itemno='{data["value"]}' GROUP BY go.itemno limit 1000;")
             
           
             for row in cur:
+                branchesStock = {}
+                brIndex = 1
+                for br in branches:
+                    branchesStock[f"Br{br}"] = row[33 + brIndex]
+                    brIndex += 1
                 item_dict = {
                 "ItemNo": row[0],
                 "ItemName": row[1],
@@ -322,8 +344,8 @@ async def getAccounts(data:dict):
                 "Disc4": row[31],
                 "Disc5": row[32],
                 "PPrice": row[33],
-                "AvQty": row[34],
-                "Branch": row[35]
+                "branchesStock":branchesStock
+                
                 }
             # Append the dictionary to the list
                 items_json.append(item_dict)
@@ -331,12 +353,12 @@ async def getAccounts(data:dict):
                 flagI=1
 
             if flagI==0:
-                baseQuary = baseQuary + f"""  and (itemname LIKE '{data["value"]}%' or itemname LIKE '%{data["value"]}' or itemname LIKE '%{data["value"]}%' or go.itemno LIKE '{data["value"]}%' or itemname2 LIKE '{data["value"]}%' or itemname2 LIKE '%{data["value"]}' or itemname2 LIKE '%{data["value"]}%')  """
+                baseQuary = baseQuary + f"""  and (itemname LIKE '{data["value"]}%' or itemname LIKE '%{data["value"]}' or itemname LIKE '%{data["value"]}%' or go.itemno LIKE '{data["value"]}%' or itemname2 LIKE '{data["value"]}%' or itemname2 LIKE '%{data["value"]}' or itemname2 LIKE '%{data["value"]}%') GROUP BY go.itemno  """
 
     if flagI == 0 and flagA==0:
         baseQuary = baseQuary + " limit 1000 "
       
-        
+        print(baseQuary)
         cur.execute(baseQuary)
 
     #print(baseQuary)
@@ -345,6 +367,11 @@ async def getAccounts(data:dict):
         # Iterate over rows fetched from the cursor
         for row in cur:
             # Construct a dictionary for the current row
+            branchesStock = {}
+            brIndex = 1
+            for br in branches:
+                branchesStock[f"Br{br}"] = row[33 + brIndex]
+                brIndex += 1
             item_dict = {
                 "ItemNo": row[0],
                 "ItemName": row[1],
@@ -380,8 +407,8 @@ async def getAccounts(data:dict):
                 "Disc4": row[31],
                 "Disc5": row[32],
                 "PPrice": row[33],
-                "AvQty": row[34],
-                "Branch": row[35]
+                "branchesStock":branchesStock
+
             }
             # Append the dictionary to the list
             items_json.append(item_dict)
@@ -408,15 +435,15 @@ async def getAccounts(data:dict):
             }
             # Append the dictionary to the results list
             items_json.append(account_dict)
-
-
+    
+        
 
     # Convert the list of dictionaries to JSON
     
    
                
     r = list(items_json)
-  
+    print(r[0])
     return{
         "Info":"authorized",
         "opp":r
@@ -2489,6 +2516,7 @@ async def StockStatement(compname:str, itemNo:str):
     cur = conn.cursor()
 
     query = f"SELECT Branch,SUM(Qin-Qout) FROM `goodstrans` WHERE ItemNo = '{itemNo}' GROUP BY Branch"
+    print(query)
     cur.execute(query)
     stockDetails = []
     ind = 0
