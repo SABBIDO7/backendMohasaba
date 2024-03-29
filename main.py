@@ -13,7 +13,7 @@ from typing import List,Annotated
 import mysql.connector as mariadb
 
 import uvicorn
-from fastapi import FastAPI, File, Request, UploadFile, Form, Response, status,Depends
+from fastapi import FastAPI, Form, status,HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
@@ -2117,7 +2117,7 @@ async def StockStatement(uid:str, type:str, number:str,limit):
 @app.post("/moh/newInvoice/")
 async def newInvoice(data:dict):
     compname = data["compname"]
-    print(data)
+    
 
     try:
             conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = compname) 
@@ -2138,7 +2138,17 @@ async def newInvoice(data:dict):
             TBranch=''
         if data["accRefNo"]:
             print('adimmmmm')
-
+            cur.execute(f"SELECT UserP FROM invnum WHERE RefNo={data["accRefNo"]}")
+            result = cur.fetchone()
+            if result:
+                userP=result[0]
+                if userP!=data["username"]:
+                    #Reserved
+                    return{
+                "Info":"Failed",
+                
+                "msg":"The Invoice Has Been AlReady Taken By The Supervisor"
+                } 
             RemovedJson=data["RemovedItems"]
             for fullitem in RemovedJson:
                 item=fullitem["item"]
@@ -2156,9 +2166,9 @@ async def newInvoice(data:dict):
         
             basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`,`RefNo`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`) VALUES ('{data["username"]}', '{data["type"]}','{data["accRefNo"]}', '{data["accno"]}', '{data["accname"]}', '{Branch}', '{TBranch}', '{data["accDate"]}', '{data["accTime"]}', '','','','{data["Cur"]}','{data["Rate"]}'); """
         else:
-            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`) VALUES ('{data["username"]}', '{data["type"]}', '{data["accno"]}', '{data["accname"]}', '{Branch}', {TBranch}, '{data["accDate"]}', '{data["accTime"]}', '','','','{data["Cur"]}','{data["Rate"]}'); """
+            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`) VALUES ('{data["username"]}', '{data["type"]}', '{data["accno"]}', '{data["accname"]}', '{Branch}', '{TBranch}', '{data["accDate"]}', '{data["accTime"]}', '','','','{data["Cur"]}','{data["Rate"]}'); """
 
-        print(basequery)
+        
         cur.execute(basequery)
 
         #print(data)
@@ -2186,9 +2196,9 @@ async def newInvoice(data:dict):
             # if item["PPrice"]=="" or item["PPrice"]==None:
             #         item["PPrice"] = "P"
             
-            print(item)
+            
             basequery = f"""INSERT INTO `inv` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateT`, `TimeT`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`,`SPUnit`,`BPUnit`) VALUES ('{data["username"]}', '{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{item["DateT"]}', '{item["TimeT"]}','{item["PPrice"]}','{item["PType"]}','{item["PQUnit"]}','{item["TotalPieces"]}','{item["SPUnit"]}','{item["BPUnit"]}'); """
-            print(basequery)
+            
             cur.execute(basequery)
             if data["type"]!="DB_AP" and data["type"]!="CR_AP":
                 if data["type"]=="SA_AP" or data["type"]=="PR_AP" or data["type"]=="SAT_AP":
@@ -2211,7 +2221,7 @@ async def newInvoice(data:dict):
                     Qout=0
                     Qod=0
                     basequeryQin = f"""INSERT INTO `goodstrans` (`RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`,`Total`, `Notes`, `Branch`, `TDate`, `Time`,`PQUnit`,`UFob`,`Weight`,`AccNo`,`Disc100`,`AccName`,`Qin`,`Qout`,`Qod`) VALUES ('{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["TotalPieces"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{dateT}', '{item["TimeT"]}','{item["PQUnit"]}',0,0,'{data["accno"]}',0,'{data["accname"]}','{Qin}','{Qout}','{Qod}'); """
-                print(basequery2)
+                
             else:
                 accDate=change_date_format(item["DateT"])
                 if data["type"] == "DB_AP":
@@ -2250,7 +2260,7 @@ async def getInvoiceHistory(username:str,user:str):
         return({"Info":"unauthorized",
                 "msg":{e}})
     cur = conn.cursor()
-    baseQuery = f"""SELECT * FROM invnum WHERE (UserP!='P' or UserP!='p') AND User1='{user}'"""
+    baseQuery = f"""SELECT * FROM invnum WHERE (UserP='' or UserP='{user}') AND User1='{user}'"""
     cur.execute(baseQuery)
     invoices = []
     for invoice in cur:
@@ -2279,14 +2289,55 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
         return({"Info":"unauthorized",
                 "msg":{e}})
     cur = conn.cursor()
+    cur.execute(f"SELECT UserP FROM invnum WHERE RefNo={InvoiceId}")
+    result = cur.fetchone()
+    if result:
+        userP=result[0]
+        if (userP!='' and userP!=None) and userP!=user:
+            #Reserved
+            return{
+         "Info":"unauthorized",
+        "Invoices": "",
+        "InvProfile":"",
+        "message":"The Invoice Is Already taken Or Reserved"
+        } 
+             
+    else:
+        #Not Found
+        return{
+         "Info":"unauthorized",
+        "Invoices": "",
+        "InvProfile":"",
+        "message":"Invoice Not Found"
+        } 
+         
+    
+    cur.execute(f"UPDATE invnum SET UserP='{user}' WHERE RefNo='{InvoiceId}' ")
+    conn.commit()
     SalePrice = f'Sprice{salePricePrefix}'
-    print(SalePrice)
+    
+    branches=[]
+    getbranches="SELECT DISTINCT Branch FROM header WHERE Branch IS NOT NULL"
+    cur.execute(getbranches)
+    Columns=""
+    for row in cur:
+        branches.append(row[0])
+    
+    for idx, branch in enumerate(branches):
+        if idx == len(branches) - 1:
+            Columns += f"""
+            SUM(CASE WHEN gt.Branch = '{branch}' THEN gt.AvQty ELSE 0 END) AS Br{branch}
+"""
+        else:
+            Columns += f"""SUM(CASE WHEN gt.Branch = '{branch}' THEN gt.AvQty ELSE 0 END) AS Br{branch},
+            """
     #print(InvoiceId)
-    baseQuery = f"""SELECT i.*,iv.*,g.{SalePrice},ld.Balance,lh.Address,lh.Cur FROM inv i 
+    baseQuery = f"""SELECT i.*,iv.*,g.{SalePrice},ld.Balance,lh.Address,lh.Cur,{Columns} FROM inv i 
     LEFT JOIN(SELECT * FROM invnum) iv ON i.RefNo = iv.RefNo
     LEFT JOIN (SELECT {SalePrice},ItemNo FROM goods) g ON i.ItemNo = g.ItemNo
     LEFT JOIN (SELECT SUM(DB-CR) as Balance,AccNo FROM listdaily GROUP BY AccNo) ld ON iv.AccNo = ld.AccNo
     LEFT JOIN (SELECT Address,Cur,AccNo FROM listhisab) lh ON iv.AccNo = lh.AccNo
+    LEFT JOIN (SELECT Branch,ItemNo,SUM(Qin-Qout) as AvQty FROM goodstrans GROUP BY ItemNo,Branch) gt ON gt.ItemNo=i.ItemNo
     WHERE i.User1='{user}' AND i.RefNo={InvoiceId}"""
     print(baseQuery)
     cur.execute(baseQuery)
@@ -2294,6 +2345,11 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
     InvProfile=[]
     flag=0
     for invoice in cur:
+        branchesStock = {}
+        brIndex = 1
+        for br in branches:
+            branchesStock[f"Br{br}"] = invoice[41 + brIndex]
+            brIndex += 1
         inv={
                 "lno":invoice[3],
                 "no":invoice[4],
@@ -2317,7 +2373,8 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
                 "TotalPieces":invoice[21],
                 "SPUnit": invoice[22],
                 "BPUnit":invoice[23],
-                "InitialPrice":invoice[38]
+                "InitialPrice":invoice[38],
+                "BranchesStock":branchesStock
             }
         invoices.append(inv)
         if flag==0:
@@ -2343,13 +2400,14 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
             InvProfile.append(accInv)
         flag = flag+1   
     #print(invoices)
-        print(InvProfile)
+        
     invoices = sorted(invoices, key=lambda x: x["lno"])
     
     return{
          "Info":"authorized",
         "Invoices": invoices,
-        "InvProfile":InvProfile
+        "InvProfile":InvProfile,
+        "message":""
         } 
 
 # @app.post("/moh/RemoveItemFromInvoiceHistory/")
@@ -2515,7 +2573,9 @@ async def StockStatement(compname:str, itemNo:str):
     
     cur = conn.cursor()
 
-    query = f"SELECT Branch,SUM(Qin-Qout) FROM `goodstrans` WHERE ItemNo = '{itemNo}' GROUP BY Branch"
+    query = f"""SELECT gt.Branch,SUM(Qin-Qout), h.BranchName FROM `goodstrans` gt
+    LEFT JOIN (SELECT Branch,BranchName FROM header) h ON h.Branch=gt.Branch
+      WHERE gt.ItemNo = '{itemNo}' GROUP BY gt.Branch"""
     print(query)
     cur.execute(query)
     stockDetails = []
@@ -2525,7 +2585,8 @@ async def StockStatement(compname:str, itemNo:str):
         stockDetails.append({     
         "key":ind,                 
         "Branch" :x[0] ,  
-        "Qty" :x[1]
+        "Qty" :x[1],
+        "BranchName":x[2]
         })
         ind = ind +1
     print(stockDetails)
@@ -2535,7 +2596,23 @@ async def StockStatement(compname:str, itemNo:str):
     "stockDetails":stockDetails,
     "ItemNo":itemNo
     }
-
+@app.post("/moh/ReleaseInvoice/{username}/{user}/{InvoiceId}/")
+async def releaseInvoice(InvoiceId:str,user:str,username:str):
+    try:
+        conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+    except mariadb.Error as e:       
+        print(f"Error connecting to MariaDB Platform: {e}")  
+        response.status_code = status.HTTP_401_UNAUTHORIZED
+        return({"Info":"unauthorized",
+                    "msg":{e}})
+    
+    cur = conn.cursor()
+    cur.execute(f"UPDATE invnum SET UserP='' WHERE RefNo='{InvoiceId}' ")
+    conn.commit()
+    return{
+    "Info":"authorized",
+    "message":"Success"  }
 
 
 
