@@ -184,9 +184,7 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
                         ChangeBranch="Y"
                     else:
                         ChangeBranch=users[23].upper()
-                    print(Sbranch)
-                    print(Abranch)
-                    print(DeleteInvoice)
+                   
                     return{
                         "Info":"authorized",
                         "compname":users[0].upper(),
@@ -274,7 +272,7 @@ async def getAccounts(data:dict):
             #print(A)
             if flagA==0:
                 baseQuary = baseQuary + f"""  and (accname LIKE '{data["value"]}%' or accname LIKE '%{data["value"]}' or accname LIKE '%{data["value"]}%' or lh.accno LIKE '{data["value"]}%' or tel LIKE '{data["value"]}%' or tel LIKE '%{data["value"]}' or tel LIKE '%{data["value"]}%' or lh.contact LIKE '{data["value"]}%' or lh.contact LIKE '%{data["value"]}' or lh.contact LIKE '%{data["value"]}%' )  or lh.address  LIKE '{data["value"]}%' or lh.address  LIKE '%{data["value"]}' or lh.address  LIKE '%{data["value"]}%'"""
-        print(baseQuary)
+        
     
     if data["option"] == "Items":
         branches=[]
@@ -283,7 +281,7 @@ async def getAccounts(data:dict):
         Columns=""
         for row in cur2:
             branches.append(row[0])
-        print(branches)
+        
         for idx, branch in enumerate(branches):
             if idx == len(branches) - 1:
                 Columns += f"SUM(CASE WHEN gt.Branch = '{branch}' THEN gt.AvQty ELSE 0 END) AS Br{branch}"
@@ -298,7 +296,7 @@ async def getAccounts(data:dict):
         #ItemsByBranchQuery=f"SELECT Branch,Sum(Qin-Qout) as BrQty FROM goodstrans WHERE ItemNo='{data["value"]}'"
         if data["value"] =="":
             baseQuary = baseQuary +" WHERE go.itemno not like '%ALLDATA%' GROUP BY go.itemno"
-            print(baseQuary)
+           
         elif data["value"] != "":
             cur.execute(baseQuary+f" WHERE go.itemno not like '%ALLDATA%' and go.itemno='{data["value"]}' GROUP BY go.itemno limit 1000;")
             
@@ -358,7 +356,7 @@ async def getAccounts(data:dict):
     if flagI == 0 and flagA==0:
         baseQuary = baseQuary + " limit 1000 "
       
-        print(baseQuary)
+        
         cur.execute(baseQuary)
 
     #print(baseQuary)
@@ -443,7 +441,7 @@ async def getAccounts(data:dict):
    
                
     r = list(items_json)
-    print(r[0])
+    
     return{
         "Info":"authorized",
         "opp":r
@@ -675,14 +673,14 @@ WHERE
                 baseQuary = baseQuary + str(f" AND ({fullyName} like \'%{f['value']}%\' OR {fullyName} like \'{f['value']}%\' OR {fullyName} like \'%{f['value']}\')")
             elif f["type"] == "Not Equal":
                 if f['name'] == "Balance" and f['value'] == '0':
-                    print("fetit")
+                    
                     baseQuary = baseQuary + str(f" AND ({fullyName} >= '0.01' OR {fullyName} <= '-0.01') ")
                 else:   
-                    print(f['value'])
+                    
                     baseQuary = baseQuary + str(f" AND {fullyName} != \'{f['value']}\' ")
             elif f["type"] == ">":
                 if f['name'] == "Balance" and f['value'] == '0':
-                    print("fetit")
+                    
                     baseQuary = baseQuary + str(f" AND {fullyName} >= '0.01' ")
                 else:
                     baseQuary = baseQuary + str(f" AND {fullyName} > \'{f['value']}\' ")
@@ -707,13 +705,13 @@ WHERE
     if flag ==1:
         if sign == "Not Equal":
             if value == '0':
-                print("fetiot")
+                
                 baseQuary = baseQuary + str(f" HAVING Balance >= '0.01' OR Balance <= '-0.01' ")
             else:
                 baseQuary = baseQuary + str(f" HAVING Balance != \'{value}\' ")
         elif sign == ">":
                 if f['value']=='0':
-                    print("fetit")
+                    
                     baseQuary = baseQuary + str(f" HAVING Balance >= '0.01' ") 
                 else:
                     baseQuary = baseQuary + str(f" HAVING Balance > \'{value}\' ")
@@ -729,7 +727,7 @@ WHERE
         baseQuary = baseQuary + str(f"limit {limit};")
 
 
-    print(baseQuary)
+    
     cur.execute(baseQuary)
     
     r = list(cur)
@@ -1156,7 +1154,7 @@ async def AccStatementFilter(data:dict):
         baseQuary = f"SELECT * FROM listdaily  WHERE AccNo = {data['id']} "
     
     if data["data"]["dfrom"] != "":
-        print(data["data"]["dfrom"])
+        
         datelst = str(data["data"]["dfrom"]).split("-")
         fdate = datelst[0] +"/"+ datelst[1] +"/"+ datelst[2]
         baseQuary = baseQuary + f" and date >= '{fdate}' "
@@ -1313,7 +1311,7 @@ async def StockStatement(uid:str, type:str, number:str):
     cur = conn.cursor()
 
     basequery = f"SELECT * FROM `goodstrans` WHERE RefType = '{type}' AND RefNo = {number} ORDER BY LN"
-    print(basequery)
+    
     cur.execute(basequery)
 
         
@@ -1344,7 +1342,7 @@ async def StockStatement(uid:str, type:str, number:str):
             "ItemName":x[19],
         })
         ind = ind +1
-    print(double)
+    
     return{
         "Info":"authorized",
         "double":double,
@@ -1629,13 +1627,13 @@ async def stockFilter(data:dict,limit):
                 baseQuary = baseQuary + str(f" AND ({fullyName}{f['name']} like \'%{f['value']}%\' OR {fullyName}{f['name']} like \'{f['value']}%\' OR {fullyName}{f['name']} like \'%{f['value']}\') ")
             elif f["type"] == "Not Equal":
                 if f['name'] == "qty" and f['value']=='0':
-                    print("fetit")
+                    
                     baseQuary = baseQuary + str(f" AND ({fullyName}{f['name']} >= '0.01' OR {fullyName}{f['name']} <= '-0.01') ") 
                 else:
                     baseQuary = baseQuary + str(f" AND {fullyName}{f['name']} != \'{f['value']}\' ")
             elif f["type"] == ">":
                 if f['name'] == "qty" and f['value']=='0':
-                    print("fetit")
+                    
                     baseQuary = baseQuary + str(f" AND {fullyName}{f['name']} >= '0.01' ") 
                 else:
                     baseQuary = baseQuary + str(f" AND {fullyName}{f['name']} > \'{f['value']}\' ")
@@ -1651,7 +1649,7 @@ async def stockFilter(data:dict,limit):
     
     if limit != "All":
         baseQuary = baseQuary + str(f"limit {limit} ;")
-    print(baseQuary)
+    
     cur.execute(baseQuary)
     qstock = list(cur)
     goods = []
@@ -1870,7 +1868,7 @@ async def StockStatementFilter(data:dict):
         baseQuary = f"SELECT * FROM `goodstrans`   WHERE `ItemNo` = '{data['id']}' "
         
     if data["data"]["dfrom"] != "":
-        print(data["data"]["dfrom"])
+        
         datelst = str(data["data"]["dfrom"]).split("-")
         fdate = datelst[0] +"/"+ datelst[1] +"/"+ datelst[2]
         baseQuary = baseQuary + f" and TDate >= '{fdate}' "
@@ -2332,24 +2330,23 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
             Columns += f"""SUM(CASE WHEN gt.Branch = '{branch}' THEN gt.AvQty ELSE 0 END) AS Br{branch},
             """
     #print(InvoiceId)
-    baseQuery = f"""SELECT i.*,iv.*,g.{SalePrice},ld.Balance,lh.Address,lh.Cur,{Columns} FROM inv i 
+    baseQuery = f"""SELECT i.*,iv.*,g.{SalePrice},ld.Balance,lh.Address,lh.Cur FROM inv i 
     LEFT JOIN(SELECT * FROM invnum) iv ON i.RefNo = iv.RefNo
     LEFT JOIN (SELECT {SalePrice},ItemNo FROM goods) g ON i.ItemNo = g.ItemNo
     LEFT JOIN (SELECT SUM(DB-CR) as Balance,AccNo FROM listdaily GROUP BY AccNo) ld ON iv.AccNo = ld.AccNo
     LEFT JOIN (SELECT Address,Cur,AccNo FROM listhisab) lh ON iv.AccNo = lh.AccNo
-    LEFT JOIN (SELECT Branch,ItemNo,SUM(Qin-Qout) as AvQty FROM goodstrans GROUP BY ItemNo,Branch) gt ON gt.ItemNo=i.ItemNo
     WHERE i.User1='{user}' AND i.RefNo={InvoiceId}"""
-    print(baseQuery)
+    
     cur.execute(baseQuery)
     invoices = []
     InvProfile=[]
     flag=0
     for invoice in cur:
-        branchesStock = {}
-        brIndex = 1
-        for br in branches:
-            branchesStock[f"Br{br}"] = invoice[41 + brIndex]
-            brIndex += 1
+        # branchesStock = {}
+        # brIndex = 1
+        # for br in branches:
+        #     branchesStock[f"Br{br}"] = invoice[41 + brIndex]
+        #     brIndex += 1
         inv={
                 "lno":invoice[3],
                 "no":invoice[4],
@@ -2374,7 +2371,7 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
                 "SPUnit": invoice[22],
                 "BPUnit":invoice[23],
                 "InitialPrice":invoice[38],
-                "BranchesStock":branchesStock
+               
             }
         invoices.append(inv)
         if flag==0:
@@ -2461,7 +2458,7 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
 async def deleteInvoice(data:dict):
 
     try:
-            print(data)
+            
             compname=data["compname"]
             conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = compname) 
         #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
@@ -2475,21 +2472,19 @@ async def deleteInvoice(data:dict):
         cur =conn.cursor()
         items=data["item"]
         RemovedItems=data["RemovedItems"]
-        print("--------",RemovedItems)
+        
         for item in items:
             basequery=f"""INSERT INTO `deletehistory` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateDeleted`, `TimeDeleted`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`,`SPUnit`,`BPUnit`,`DeleteType`) VALUES ('{data["username"]}', '{data["type"]}','{data["RefNo"]}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{data["DateDeleted"]}', '{data["TimeDeleted"]}','{item["PPrice"]}','{item["PType"]}','{item["PQUnit"]}','{item["TotalPieces"]}','{item["SPUnit"]}','{item["BPUnit"]}','{data["DeleteType"]}'); """
-            print(basequery)
+            
             
             cur.execute(basequery)
             print("sucess1")
         if RemovedItems:
             for item in RemovedItems:
                 basequery=f"""INSERT INTO `deletehistory` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateDeleted`, `TimeDeleted`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`,`SPUnit`,`BPUnit`,`DeleteType`) VALUES ('{data["username"]}', '{data["type"]}','{data["RefNo"]}','{item["item"]["lno"]}', '{item["item"]["no"]}', '{item["item"]["name"]}','{item["item"]["qty"]}', '{item["item"]["PQty"]}', '{item["item"]["PUnit"]}', '{item["item"]["uprice"]}', '{item["item"]["discount"]}', '{item["item"]["tax"]}', '{item["item"]["TaxTotal"]}','{item["item"]["Total"]}','{item["item"]["Note"]}', '{item["item"]["branch"]}', '{data["DateDeleted"]}', '{data["TimeDeleted"]}','{item["item"]["PPrice"]}','{item["item"]["PType"]}','{item["item"]["PQUnit"]}','{item["item"]["TotalPieces"]}','{item["item"]["SPUnit"]}','{item["item"]["BPUnit"]}','{data["DeleteType"]}'); """
-                print(basequery)
                 cur.execute(basequery)
         cur.execute(f"DELETE  FROM inv WHERE User1='{data["username"]}' AND RefType='{data["type"]}' AND RefNo='{data["RefNo"]}' ;")
         
-        print("inserted")
         cur.execute(f"DELETE  FROM invnum WHERE User1='{data["username"]}' AND RefType='{data["type"]}' AND RefNo='{data["RefNo"]}' AND AccNo='{data["client"]["id"]}';")
 
         cur.execute(f"Delete FROM listdaily WHERE RefNo='{data["RefNo"]}' AND RefType='{data["type"]}' ")
@@ -2561,7 +2556,6 @@ async def getCompanyInfo(compname:str):
 async def StockStatement(compname:str, itemNo:str):
 
     username=compname
-    print(itemNo)
     try:
             conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
         #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
@@ -2576,7 +2570,6 @@ async def StockStatement(compname:str, itemNo:str):
     query = f"""SELECT gt.Branch,SUM(Qin-Qout), h.BranchName FROM `goodstrans` gt
     LEFT JOIN (SELECT Branch,BranchName FROM header) h ON h.Branch=gt.Branch
       WHERE gt.ItemNo = '{itemNo}' GROUP BY gt.Branch"""
-    print(query)
     cur.execute(query)
     stockDetails = []
     ind = 0
@@ -2589,7 +2582,6 @@ async def StockStatement(compname:str, itemNo:str):
         "BranchName":x[2]
         })
         ind = ind +1
-    print(stockDetails)
     print("index")
     return{
     "Info":"authorized",
