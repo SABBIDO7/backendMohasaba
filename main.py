@@ -289,10 +289,11 @@ async def getAccounts(data:dict):
                 Columns += f"SUM(CASE WHEN gt.Branch = '{branch}' THEN gt.AvQty ELSE 0 END) AS Br{branch},"
 
         if data["SATFromBranch"] != "N" and data["SATToBranch"] !="N":
-            baseQuary = f"SELECT go.*,{Columns} FROM goods go LEFT JOIN(SELECT SUM(Qin-Qout) as AvQty,ItemNo,Branch FROM goodstrans  WHERE Branch={data["SATFromBranch"]} GROUP BY ItemNo,Branch) gt ON go.ItemNo=gt.ItemNo "
+            baseQuary = f"SELECT go.*,COALESCE(gts.Stock,0),{Columns} FROM goods go LEFT JOIN(SELECT SUM(Qin-Qout) as AvQty,ItemNo,Branch FROM goodstrans  WHERE Branch={data["SATFromBranch"]} GROUP BY ItemNo,Branch) gt ON go.ItemNo=gt.ItemNo "
             
         else:
-            baseQuary = f"SELECT go.*,{Columns} FROM goods go LEFT JOIN(SELECT SUM(Qin-Qout) as AvQty,ItemNo,Branch FROM goodstrans GROUP BY ItemNo,Branch) gt ON go.ItemNo=gt.ItemNo "
+            baseQuary = f"SELECT go.*,COALESCE(gts.Stock,0),{Columns} FROM goods go LEFT JOIN(SELECT SUM(Qin-Qout) as AvQty,ItemNo,Branch FROM goodstrans GROUP BY ItemNo,Branch) gt ON go.ItemNo=gt.ItemNo "
+        baseQuary= baseQuary + f" LEFT JOIN(SELECT SUM(Qin-Qout) as Stock,ItemNo FROM goodstrans GROUP BY ItemNo) gts ON gts.ItemNo=go.ItemNo "
         #ItemsByBranchQuery=f"SELECT Branch,Sum(Qin-Qout) as BrQty FROM goodstrans WHERE ItemNo='{data["value"]}'"
         if data["value"] =="":
             baseQuary = baseQuary +" WHERE go.itemno not like '%ALLDATA%' GROUP BY go.itemno"
@@ -305,7 +306,7 @@ async def getAccounts(data:dict):
                 branchesStock = {}
                 brIndex = 1
                 for br in branches:
-                    branchesStock[f"Br{br}"] = row[33 + brIndex]
+                    branchesStock[f"Br{br}"] = row[34 + brIndex]
                     brIndex += 1
                 item_dict = {
                 "ItemNo": row[0],
@@ -342,21 +343,23 @@ async def getAccounts(data:dict):
                 "Disc4": row[31],
                 "Disc5": row[32],
                 "PPrice": row[33],
+                "Stock": row[34],
                 "branchesStock":branchesStock
                 
                 }
+                print(item_dict)
             # Append the dictionary to the list
                 items_json.append(item_dict)
               
                 flagI=1
-
+            
             if flagI==0:
                 baseQuary = baseQuary + f"""  and (itemname LIKE '{data["value"]}%' or itemname LIKE '%{data["value"]}' or itemname LIKE '%{data["value"]}%' or go.itemno LIKE '{data["value"]}%' or itemname2 LIKE '{data["value"]}%' or itemname2 LIKE '%{data["value"]}' or itemname2 LIKE '%{data["value"]}%') GROUP BY go.itemno  """
 
     if flagI == 0 and flagA==0:
         baseQuary = baseQuary + " limit 1000 "
       
-        
+        print(baseQuary)
         cur.execute(baseQuary)
 
     #print(baseQuary)
@@ -368,7 +371,7 @@ async def getAccounts(data:dict):
             branchesStock = {}
             brIndex = 1
             for br in branches:
-                branchesStock[f"Br{br}"] = row[33 + brIndex]
+                branchesStock[f"Br{br}"] = row[34 + brIndex]
                 brIndex += 1
             item_dict = {
                 "ItemNo": row[0],
@@ -405,6 +408,7 @@ async def getAccounts(data:dict):
                 "Disc4": row[31],
                 "Disc5": row[32],
                 "PPrice": row[33],
+                "Stock":row[34],
                 "branchesStock":branchesStock
 
             }
@@ -2330,11 +2334,12 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
             Columns += f"""SUM(CASE WHEN gt.Branch = '{branch}' THEN gt.AvQty ELSE 0 END) AS Br{branch},
             """
     #print(InvoiceId)
-    baseQuery = f"""SELECT i.*,iv.*,g.{SalePrice},ld.Balance,lh.Address,lh.Cur FROM inv i 
+    baseQuery = f"""SELECT i.*,iv.*,g.{SalePrice},ld.Balance,lh.Address,lh.Cur,COALESCE(gts.Stock,0) FROM inv i 
     LEFT JOIN(SELECT * FROM invnum) iv ON i.RefNo = iv.RefNo
     LEFT JOIN (SELECT {SalePrice},ItemNo FROM goods) g ON i.ItemNo = g.ItemNo
     LEFT JOIN (SELECT SUM(DB-CR) as Balance,AccNo FROM listdaily GROUP BY AccNo) ld ON iv.AccNo = ld.AccNo
     LEFT JOIN (SELECT Address,Cur,AccNo FROM listhisab) lh ON iv.AccNo = lh.AccNo
+    LEFT JOIN (SELECT ItemNo,SUM(Qin-Qout) as Stock FROM goodstrans GROUP BY ItemNo) gts ON gts.ItemNo=i.ItemNo
     WHERE i.User1='{user}' AND i.RefNo={InvoiceId}"""
     
     cur.execute(baseQuery)
@@ -2371,6 +2376,7 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
                 "SPUnit": invoice[22],
                 "BPUnit":invoice[23],
                 "InitialPrice":invoice[38],
+                "TotalStockQty":invoice[42]
                
             }
         invoices.append(inv)
