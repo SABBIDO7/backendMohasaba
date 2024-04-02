@@ -347,7 +347,7 @@ async def getAccounts(data:dict):
                 "branchesStock":branchesStock
                 
                 }
-                print(item_dict)
+                
             # Append the dictionary to the list
                 items_json.append(item_dict)
               
@@ -359,7 +359,7 @@ async def getAccounts(data:dict):
     if flagI == 0 and flagA==0:
         baseQuary = baseQuary + " limit 1000 "
       
-        print(baseQuary)
+        
         cur.execute(baseQuary)
 
     #print(baseQuary)
@@ -2110,7 +2110,7 @@ async def StockStatement(uid:str, type:str, number:str,limit):
         "ItemName":x[19],
         })
         ind = ind +1
-    print("index")
+    
     return{
     "Info":"authorized",
     "double":double,
@@ -2138,6 +2138,7 @@ async def newInvoice(data:dict):
         else:
             Branch=data["Abranch"]
             TBranch=''
+        print(data["accRefNo"],"tata33")
         if data["accRefNo"]:
             print('adimmmmm')
             cur.execute(f"SELECT UserP FROM invnum WHERE RefNo={data["accRefNo"]}")
@@ -2174,7 +2175,7 @@ async def newInvoice(data:dict):
         cur.execute(basequery)
 
         #print(data)
-        print("succss")
+        
         ref_no = cur.lastrowid
 
         print("RefNo:", ref_no)
@@ -2484,7 +2485,7 @@ async def deleteInvoice(data:dict):
             
             
             cur.execute(basequery)
-            print("sucess1")
+            
         if RemovedItems:
             for item in RemovedItems:
                 basequery=f"""INSERT INTO `deletehistory` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateDeleted`, `TimeDeleted`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`,`SPUnit`,`BPUnit`,`DeleteType`) VALUES ('{data["username"]}', '{data["type"]}','{data["RefNo"]}','{item["item"]["lno"]}', '{item["item"]["no"]}', '{item["item"]["name"]}','{item["item"]["qty"]}', '{item["item"]["PQty"]}', '{item["item"]["PUnit"]}', '{item["item"]["uprice"]}', '{item["item"]["discount"]}', '{item["item"]["tax"]}', '{item["item"]["TaxTotal"]}','{item["item"]["Total"]}','{item["item"]["Note"]}', '{item["item"]["branch"]}', '{data["DateDeleted"]}', '{data["TimeDeleted"]}','{item["item"]["PPrice"]}','{item["item"]["PType"]}','{item["item"]["PQUnit"]}','{item["item"]["TotalPieces"]}','{item["item"]["SPUnit"]}','{item["item"]["BPUnit"]}','{data["DeleteType"]}'); """
@@ -2588,7 +2589,7 @@ async def StockStatement(compname:str, itemNo:str):
         "BranchName":x[2]
         })
         ind = ind +1
-    print("index")
+    
     return{
     "Info":"authorized",
     "stockDetails":stockDetails,
