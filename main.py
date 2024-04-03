@@ -220,6 +220,7 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
 async def getAccounts(data:dict):
     username=data["username"]
     #print(data)
+    
     try:
         conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
         #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
@@ -244,7 +245,7 @@ async def getAccounts(data:dict):
         #print("lkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk")
         baseQuary = baseQuary +" LEFT JOIN(SELECT SUM(DB - CR) AS Balance,AccNo FROM listdaily GROUP BY AccNo) ld ON lh.AccNo= ld.AccNo WHERE lh.accno not like '%ALLDATA%' "
         if data["value"] != "":
-            cur.execute(baseQuary+f" and lh.accNo='{data["value"]}' limit 1000;")
+            cur.execute(baseQuary+f" and lh.accNo='{data["value"]}' limit 500;")
             A=0
            
             for row in cur:
@@ -355,10 +356,10 @@ async def getAccounts(data:dict):
             
             if flagI==0:
                 baseQuary = baseQuary + f"""  and (itemname LIKE '{data["value"]}%' or itemname LIKE '%{data["value"]}' or itemname LIKE '%{data["value"]}%' or go.itemno LIKE '{data["value"]}%' or itemname2 LIKE '{data["value"]}%' or itemname2 LIKE '%{data["value"]}' or itemname2 LIKE '%{data["value"]}%') GROUP BY go.itemno  """
-
+    print(baseQuary)
     if flagI == 0 and flagA==0:
-        baseQuary = baseQuary + " limit 1000 "
-      
+        baseQuary = baseQuary + " limit 500 "
+        
         
         cur.execute(baseQuary)
 
