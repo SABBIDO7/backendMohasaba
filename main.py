@@ -70,6 +70,9 @@ dbHost='80.81.158.76'
 
     
             
+
+        
+
 def change_date_format(date_str):
     # Parse the input date string
     date_obj = datetime.strptime(date_str, '%d/%m/%Y')
@@ -77,23 +80,6 @@ def change_date_format(date_str):
     # Format the date object to the desired format
     formatted_date = date_obj.strftime('%Y/%m/%d')
     return formatted_date
-        
-
-# @app.get("/")    
-# async def mohHome(req:Request):
-#     return templates.TemplateResponse("index.html",{"request":req})
-
-# @app.get("/Accounting")
-# async def mohAcc(req:Request):
-#     return templates.TemplateResponse("index.html",{"request":req}) 
-
-# @app.get("/Inventory")
-# async def mohInv(req:Request):
-#     return templates.TemplateResponse("index.html",{"request":req})
-
-# @app.get("/Invoice")
-# async def mohInvoice(req:Request):
-#     return templates.TemplateResponse("index.html",{"request":req})
 
 @app.post("/moh/login/")
 async def login(compname:str = Form() ,username:str = Form(), password:str = Form()):
@@ -245,7 +231,7 @@ async def getAccounts(data:dict):
         #print("lkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk")
         baseQuary = baseQuary +" LEFT JOIN(SELECT SUM(DB - CR) AS Balance,AccNo FROM listdaily GROUP BY AccNo) ld ON lh.AccNo= ld.AccNo WHERE lh.accno not like '%ALLDATA%' "
         if data["value"] != "":
-            cur.execute(baseQuary+f" and lh.accNo='{data["value"]}' limit 500;")
+            cur.execute(baseQuary+f" and lh.accNo='{data['value']}' limit 1000;")
             A=0
            
             for row in cur:
@@ -290,7 +276,7 @@ async def getAccounts(data:dict):
                 Columns += f"SUM(CASE WHEN gt.Branch = '{branch}' THEN gt.AvQty ELSE 0 END) AS Br{branch},"
 
         if data["SATFromBranch"] != "N" and data["SATToBranch"] !="N":
-            baseQuary = f"SELECT go.*,COALESCE(gts.Stock,0),{Columns} FROM goods go LEFT JOIN(SELECT SUM(Qin-Qout) as AvQty,ItemNo,Branch FROM goodstrans  WHERE Branch={data["SATFromBranch"]} GROUP BY ItemNo,Branch) gt ON go.ItemNo=gt.ItemNo "
+            baseQuary = f"SELECT go.*,COALESCE(gts.Stock,0),{Columns} FROM goods go LEFT JOIN(SELECT SUM(Qin-Qout) as AvQty,ItemNo,Branch FROM goodstrans  WHERE Branch={data['SATFromBranch']} GROUP BY ItemNo,Branch) gt ON go.ItemNo=gt.ItemNo "
             
         else:
             baseQuary = f"SELECT go.*,COALESCE(gts.Stock,0),{Columns} FROM goods go LEFT JOIN(SELECT SUM(Qin-Qout) as AvQty,ItemNo,Branch FROM goodstrans GROUP BY ItemNo,Branch) gt ON go.ItemNo=gt.ItemNo "
@@ -300,7 +286,7 @@ async def getAccounts(data:dict):
             baseQuary = baseQuary +" WHERE go.itemno not like '%ALLDATA%' GROUP BY go.itemno"
            
         elif data["value"] != "":
-            cur.execute(baseQuary+f" WHERE go.itemno not like '%ALLDATA%' and go.itemno='{data["value"]}' GROUP BY go.itemno limit 1000;")
+            cur.execute(baseQuary+f" WHERE go.itemno not like '%ALLDATA%' and go.itemno='{data['value']}' GROUP BY go.itemno limit 1000;")
             
           
             for row in cur:
@@ -358,8 +344,8 @@ async def getAccounts(data:dict):
                 baseQuary = baseQuary + f"""  and (itemname LIKE '{data["value"]}%' or itemname LIKE '%{data["value"]}' or itemname LIKE '%{data["value"]}%' or go.itemno LIKE '{data["value"]}%' or itemname2 LIKE '{data["value"]}%' or itemname2 LIKE '%{data["value"]}' or itemname2 LIKE '%{data["value"]}%') GROUP BY go.itemno  """
     print(baseQuary)
     if flagI == 0 and flagA==0:
-        baseQuary = baseQuary + " limit 500 "
-        
+        baseQuary = baseQuary + " limit 1000 "
+      
         
         cur.execute(baseQuary)
 
@@ -2142,7 +2128,7 @@ async def newInvoice(data:dict):
         print(data["accRefNo"],"tata33")
         if data["accRefNo"]:
             print('adimmmmm')
-            cur.execute(f"SELECT UserP FROM invnum WHERE RefNo={data["accRefNo"]}")
+            cur.execute(f"SELECT UserP FROM invnum WHERE RefNo={data['accRefNo']}")
             result = cur.fetchone()
             if result:
                 userP=result[0]
@@ -2159,13 +2145,13 @@ async def newInvoice(data:dict):
                 
                 basequery=f"""INSERT INTO `deletehistory` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateDeleted`, `TimeDeleted`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`,`SPUnit`,`BPUnit`,`DeleteType`) VALUES ('{fullitem["username"]}', '{fullitem["type"]}','{fullitem["RefNo"]}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["qty"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}', '{item["TaxTotal"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{fullitem["DateDeleted"]}', '{fullitem["TimeDeleted"]}','{item["PPrice"]}','{item["PType"]}','{item["PQUnit"]}','{item["TotalPieces"]}','{item["SPUnit"]}','{item["BPUnit"]}','{fullitem["DeleteType"]}'); """
                 cur.execute(basequery)
-            cur.execute(f"DELETE  FROM invnum WHERE RefNo='{data["accRefNo"]}'")
+            cur.execute(f"DELETE  FROM invnum WHERE RefNo='{data['accRefNo']}'")
             
-            cur.execute(f"DELETE  FROM inv WHERE RefNo='{data["accRefNo"]}'")
+            cur.execute(f"DELETE  FROM inv WHERE RefNo='{data['accRefNo']}'")
             
-            cur.execute(f"Delete FROM listdaily WHERE RefNo='{data["accRefNo"]}' AND RefType='{data["type"]}' ")
+            cur.execute(f"Delete FROM listdaily WHERE RefNo='{data['accRefNo']}' AND RefType='{data['type']}' ")
             
-            cur.execute(f"DELETE FROM goodstrans WHERE RefNo='{data["accRefNo"]}' AND RefType='{data["type"]}' ")
+            cur.execute(f"DELETE FROM goodstrans WHERE RefNo='{data['accRefNo']}' AND RefType='{data['type']}' ")
             conn.commit()
         
             basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`,`RefNo`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`) VALUES ('{data["username"]}', '{data["type"]}','{data["accRefNo"]}', '{data["accno"]}', '{data["accname"]}', '{Branch}', '{TBranch}', '{data["accDate"]}', '{data["accTime"]}', '','','','{data["Cur"]}','{data["Rate"]}'); """
@@ -2180,7 +2166,7 @@ async def newInvoice(data:dict):
         ref_no = cur.lastrowid
 
         print("RefNo:", ref_no)
-        listdailyNote=f"INVOICE RefType:{data["type"]} {ref_no} APP"
+        listdailyNote=f"INVOICE RefType:{data['type']} {ref_no} APP"
         if data["type"] !="OD_AP data": #IF NOT OD INSERT IN LISTDAILY
             if data["type"]!="DB_AP" and data["type"]!="CR_AP" and data["type"]!="SAT_AP":
                 if data["invoiceTotal"]>0:
@@ -2491,13 +2477,13 @@ async def deleteInvoice(data:dict):
             for item in RemovedItems:
                 basequery=f"""INSERT INTO `deletehistory` (`User1`, `RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`, `TaxTotal`, `Total`, `Note`, `Branch`, `DateDeleted`, `TimeDeleted`,`PPrice`,`PType`,`PQUnit`,`TotalPieces`,`SPUnit`,`BPUnit`,`DeleteType`) VALUES ('{data["username"]}', '{data["type"]}','{data["RefNo"]}','{item["item"]["lno"]}', '{item["item"]["no"]}', '{item["item"]["name"]}','{item["item"]["qty"]}', '{item["item"]["PQty"]}', '{item["item"]["PUnit"]}', '{item["item"]["uprice"]}', '{item["item"]["discount"]}', '{item["item"]["tax"]}', '{item["item"]["TaxTotal"]}','{item["item"]["Total"]}','{item["item"]["Note"]}', '{item["item"]["branch"]}', '{data["DateDeleted"]}', '{data["TimeDeleted"]}','{item["item"]["PPrice"]}','{item["item"]["PType"]}','{item["item"]["PQUnit"]}','{item["item"]["TotalPieces"]}','{item["item"]["SPUnit"]}','{item["item"]["BPUnit"]}','{data["DeleteType"]}'); """
                 cur.execute(basequery)
-        cur.execute(f"DELETE  FROM inv WHERE User1='{data["username"]}' AND RefType='{data["type"]}' AND RefNo='{data["RefNo"]}' ;")
+        cur.execute(f"DELETE  FROM inv WHERE User1='{data['username']}' AND RefType='{data['type']}' AND RefNo='{data['RefNo']}' ;")
         
-        cur.execute(f"DELETE  FROM invnum WHERE User1='{data["username"]}' AND RefType='{data["type"]}' AND RefNo='{data["RefNo"]}' AND AccNo='{data["client"]["id"]}';")
+        cur.execute(f"DELETE  FROM invnum WHERE User1='{data['username']}' AND RefType='{data['type']}' AND RefNo='{data['RefNo']}' AND AccNo='{data['client']['id']}';")
 
-        cur.execute(f"Delete FROM listdaily WHERE RefNo='{data["RefNo"]}' AND RefType='{data["type"]}' ")
+        cur.execute(f"Delete FROM listdaily WHERE RefNo='{data['RefNo']}' AND RefType='{data['type']}' ")
             
-        cur.execute(f"DELETE FROM goodstrans WHERE RefNo='{data["RefNo"]}' AND RefType='{data["type"]}' ")
+        cur.execute(f"DELETE FROM goodstrans WHERE RefNo='{data['RefNo']}' AND RefType='{data['type']}' ")
         conn.commit()
         return({"Info":"authorized",
                     "msg":"Success"})
@@ -2613,6 +2599,7 @@ async def releaseInvoice(InvoiceId:str,user:str,username:str):
     return{
     "Info":"authorized",
     "message":"Success"  }
+
 
 
 
