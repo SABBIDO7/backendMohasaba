@@ -2259,6 +2259,7 @@ async def getInvoiceHistory(username:str,user:str):
               'RefType': invoice[1],
               'RefNo': invoice[2],
               'AccNo':invoice[3],
+              'AccName':invoice[4],
               'Branch': invoice[5],
               'DateI': invoice[7],
             }
