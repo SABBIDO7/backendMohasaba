@@ -341,13 +341,13 @@ async def getAccounts(data:dict):
                 flagI=1
             
             if flagI==0:
-                baseQuary = baseQuary + f"""  and (itemname LIKE '{data["value"]}%' or itemname LIKE '%{data["value"]}' or itemname LIKE '%{data["value"]}%' or go.itemno LIKE '{data["value"]}%' or itemname2 LIKE '{data["value"]}%' or itemname2 LIKE '%{data["value"]}' or itemname2 LIKE '%{data["value"]}%') GROUP BY go.itemno  """
-    print(baseQuary)
+                baseQuary = baseQuary + f"""  WHERE (itemname LIKE '{data["value"]}%' or itemname LIKE '%{data["value"]}' or itemname LIKE '%{data["value"]}%' or go.itemno LIKE '{data["value"]}%' or itemname2 LIKE '{data["value"]}%' or itemname2 LIKE '%{data["value"]}' or itemname2 LIKE '%{data["value"]}%') GROUP BY go.itemno  """
+    print(flagA)
+    print(flagI)
     if flagI == 0 and flagA==0:
         baseQuary = baseQuary + " limit 1000 "
-      
-        
         cur.execute(baseQuary)
+
 
     #print(baseQuary)
     
@@ -399,6 +399,7 @@ async def getAccounts(data:dict):
                 "branchesStock":branchesStock
 
             }
+
             # Append the dictionary to the list
             items_json.append(item_dict)
     elif data["option"] == "Accounts" and flagA == 0:
