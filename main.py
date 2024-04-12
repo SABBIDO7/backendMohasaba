@@ -2168,7 +2168,7 @@ async def newInvoice(data:dict):
 
         print("RefNo:", ref_no)
         listdailyNote=f"INVOICE RefType:{data['type']} {ref_no} APP"
-        if data["type"] !="OD_AP data": #IF NOT OD INSERT IN LISTDAILY
+        if data["type"] !="OD_AP": #IF NOT OD INSERT IN LISTDAILY
             if data["type"]!="DB_AP" and data["type"]!="CR_AP" and data["type"]!="SAT_AP":
                 if data["invoiceTotal"]>0:
                     DB=data["invoiceTotal"]
@@ -2211,7 +2211,7 @@ async def newInvoice(data:dict):
                     Qin=item["TotalPieces"]
                     Qout=0
                     Qod=0
-                    basequeryQin = f"""INSERT INTO `goodstrans` (`RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`,`Total`, `Notes`, `Branch`, `TDate`, `Time`,`PQUnit`,`UFob`,`Weight`,`AccNo`,`Disc100`,`AccName`,`Qin`,`Qout`,`Qod`) VALUES ('{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["TotalPieces"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}','{item["Total"]}','{item["Note"]}', '{item["branch"]}', '{dateT}', '{item["TimeT"]}','{item["PQUnit"]}',0,0,'{data["accno"]}',0,'{data["accname"]}','{Qin}','{Qout}','{Qod}'); """
+                    basequeryQin = f"""INSERT INTO `goodstrans` (`RefType`, `RefNo`, `LN`, `ItemNo`, `ItemName`, `Qty`, `PQty`, `PUnit`, `UPrice`, `Disc`, `Tax`,`Total`, `Notes`, `Branch`, `TDate`, `Time`,`PQUnit`,`UFob`,`Weight`,`AccNo`,`Disc100`,`AccName`,`Qin`,`Qout`,`Qod`) VALUES ('{data["type"]}','{ref_no}','{item["lno"]}', '{item["no"]}', '{item["name"]}','{item["TotalPieces"]}', '{item["PQty"]}', '{item["PUnit"]}', '{item["uprice"]}', '{item["discount"]}', '{item["tax"]}','{item["Total"]}','{item["Note"]}', '{TBranch}', '{dateT}', '{item["TimeT"]}','{item["PQUnit"]}',0,0,'{data["accno"]}',0,'{data["accname"]}','{Qin}','{Qout}','{Qod}'); """
                 
             else:
                 accDate=change_date_format(item["DateT"])
