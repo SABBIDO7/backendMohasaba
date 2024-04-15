@@ -283,10 +283,19 @@ async def getAccounts(data:dict):
         baseQuary= baseQuary + f" LEFT JOIN(SELECT SUM(Qin-Qout) as Stock,ItemNo FROM goodstrans GROUP BY ItemNo) gts ON gts.ItemNo=go.ItemNo "
         #ItemsByBranchQuery=f"SELECT Branch,Sum(Qin-Qout) as BrQty FROM goodstrans WHERE ItemNo='{data["value"]}'"
         if data["value"] =="":
-            baseQuary = baseQuary +" WHERE go.itemno not like '%ALLDATA%' GROUP BY go.itemno"
-           
+            baseQuary = baseQuary +" WHERE go.itemno not like '%ALLDATA%' "
+            if data["groupName"]!="":
+                
+                baseQuary=baseQuary +f" AND {data['groupType']} = '{data['groupName']}' " 
+            baseQuary = baseQuary +" GROUP BY go.itemno "
+            
         elif data["value"] != "":
-            cur.execute(baseQuary+f" WHERE go.itemno not like '%ALLDATA%' and go.itemno='{data['value']}' GROUP BY go.itemno limit 1000;")
+            if data["groupName"]!="":
+                baseQuary1=baseQuary +f" WHERE go.itemno not like '%ALLDATA%' and go.itemno='{data['value']}' AND {data['groupType']} = '{data['groupName']}' GROUP BY go.itemno limit 1000;" 
+            else:
+                 baseQuary1=baseQuary1 + f" WHERE go.itemno not like '%ALLDATA%' and go.itemno='{data['value']}' GROUP BY go.itemno limit 1000;"
+            print(baseQuary1)
+            cur.execute(baseQuary1)
             
           
             for row in cur:
@@ -341,11 +350,15 @@ async def getAccounts(data:dict):
                 flagI=1
             
             if flagI==0:
-                baseQuary = baseQuary + f"""  WHERE (itemname LIKE '{data["value"]}%' or itemname LIKE '%{data["value"]}' or itemname LIKE '%{data["value"]}%' or go.itemno LIKE '{data["value"]}%' or itemname2 LIKE '{data["value"]}%' or itemname2 LIKE '%{data["value"]}' or itemname2 LIKE '%{data["value"]}%') GROUP BY go.itemno  """
+                baseQuary = baseQuary + f"""  WHERE (itemname LIKE '{data["value"]}%' or itemname LIKE '%{data["value"]}' or itemname LIKE '%{data["value"]}%' or go.itemno LIKE '{data["value"]}%' or itemname2 LIKE '{data["value"]}%' or itemname2 LIKE '%{data["value"]}' or itemname2 LIKE '%{data["value"]}%')   """
+                if data["groupName"]!="":
+                    baseQuary=baseQuary +f" AND {data['groupType']} = '{data['groupName']}' " 
+                baseQuary= baseQuary+ " GROUP BY go.itemno "
     print(flagA)
     print(flagI)
     if flagI == 0 and flagA==0:
         baseQuary = baseQuary + " limit 1000 "
+        print(baseQuary)
         cur.execute(baseQuary)
 
 
@@ -433,7 +446,7 @@ async def getAccounts(data:dict):
    
                
     r = list(items_json)
-    
+
     return{
         "Info":"authorized",
         "opp":r
@@ -2537,7 +2550,10 @@ async def getCompanyInfo(compname:str):
                     "VISA3":info[14],
                     "VISA4":info[15],
                     "VISA5":info[16],
-                    "VISA6":info[17]
+                    "VISA6":info[17],
+                    "GroupType":info[18],
+                    "PrintFormat":info[19],
+                    "GrpSearchMethod":info[20]
                 }
              }
         
@@ -2602,8 +2618,36 @@ async def releaseInvoice(InvoiceId:str,user:str,username:str):
     "Info":"authorized",
     "message":"Success"  }
 
+@app.post("/moh/Invoice_Group_Select")
+async def Invoice_Group_Select(data:dict):
+    username=data["username"]
+    GroupType=data["value"]
+    try:
+        conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+    except mariadb.Error as e:       
+        print(f"Error connecting to MariaDB Platform: {e}")  
+        response.status_code = status.HTTP_401_UNAUTHORIZED
+        return({"Info":"unauthorized",
+                    "msg":{e}})
+    
+    cur = conn.cursor()
+    groupTypes=[]
+    BaseQuery = f"SELECT DISTINCT {GroupType} FROM goods WHERE {GroupType} IS NOT NULL AND {GroupType}!=''  "
+    print(BaseQuery)
+    cur.execute(BaseQuery)
 
-
+    for group in cur:
+         groupTypes.append(
+              {
+                  "GroupName":group[0] 
+              }
+         )
+    print(groupTypes)
+    return{
+    "Info":"authorized",
+    "message":"Success",
+     "groupTypes":groupTypes }
 
 
 
