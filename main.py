@@ -225,233 +225,237 @@ async def getAccounts(data:dict):
     flagA=0
     flagI=0
     ItemsByBranchQuery=""
-    
-    if data["option"] == "Accounts":
-        baseQuary ="SELECT lh.*,Balance from listhisab lh"
-        #print("lkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk")
-        baseQuary = baseQuary +" LEFT JOIN(SELECT SUM(DB - CR) AS Balance,AccNo FROM listdaily GROUP BY AccNo) ld ON lh.AccNo= ld.AccNo WHERE lh.accno not like '%ALLDATA%' "
-        if data["value"] != "":
-            cur.execute(baseQuary+f" and lh.accNo='{data['value']}' limit 1000;")
-            A=0
-           
-            for row in cur:
-                account_dict = {
-                "AccNo": row[0],
-                "AccName": row[1],
-                "Cur": row[2],
-                "SETA": row[3],
-                "Category": row[4],
-                "Price": row[5],
-                "Contact": row[6],
-                "TaxNo": row[7],
-                "SMan": row[8],
-                "Address": row[9],
-                "Tel": row[10],
-                "Mobile": row[11],
-                "AccName2": row[12],
-                "Fax": row[13],
-                "Balance": row[14]
-                }
-            # Append the dictionary to the results list
-                items_json.append(account_dict)
-                flagA=1
-            #print("rrrtttttt")
-            #print(A)
-            if flagA==0:
-                baseQuary = baseQuary + f"""  and (accname LIKE '{data["value"]}%' or accname LIKE '%{data["value"]}' or accname LIKE '%{data["value"]}%' or lh.accno LIKE '{data["value"]}%' or tel LIKE '{data["value"]}%' or tel LIKE '%{data["value"]}' or tel LIKE '%{data["value"]}%' or lh.contact LIKE '{data["value"]}%' or lh.contact LIKE '%{data["value"]}' or lh.contact LIKE '%{data["value"]}%' )  or lh.address  LIKE '{data["value"]}%' or lh.address  LIKE '%{data["value"]}' or lh.address  LIKE '%{data["value"]}%'"""
+    try:
+        if data["option"] == "Accounts":
+            baseQuary ="SELECT lh.*,Balance from listhisab lh"
+            #print("lkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk")
+            baseQuary = baseQuary +" LEFT JOIN(SELECT SUM(DB - CR) AS Balance,AccNo FROM listdaily GROUP BY AccNo) ld ON lh.AccNo= ld.AccNo WHERE lh.accno not like '%ALLDATA%' "
+            if data["value"] != "":
+                cur.execute(baseQuary+f" and lh.accNo='{data['value']}' limit 1000;")
+                A=0
+            
+                for row in cur:
+                    account_dict = {
+                    "AccNo": row[0],
+                    "AccName": row[1],
+                    "Cur": row[2],
+                    "SETA": row[3],
+                    "Category": row[4],
+                    "Price": row[5],
+                    "Contact": row[6],
+                    "TaxNo": row[7],
+                    "SMan": row[8],
+                    "Address": row[9],
+                    "Tel": row[10],
+                    "Mobile": row[11],
+                    "AccName2": row[12],
+                    "Fax": row[13],
+                    "Balance": row[14]
+                    }
+                # Append the dictionary to the results list
+                    items_json.append(account_dict)
+                    flagA=1
+                #print("rrrtttttt")
+                #print(A)
+                if flagA==0:
+                    baseQuary = baseQuary + f"""  and (accname LIKE '{data["value"]}%' or accname LIKE '%{data["value"]}' or accname LIKE '%{data["value"]}%' or lh.accno LIKE '{data["value"]}%' or tel LIKE '{data["value"]}%' or tel LIKE '%{data["value"]}' or tel LIKE '%{data["value"]}%' or lh.contact LIKE '{data["value"]}%' or lh.contact LIKE '%{data["value"]}' or lh.contact LIKE '%{data["value"]}%' )  or lh.address  LIKE '{data["value"]}%' or lh.address  LIKE '%{data["value"]}' or lh.address  LIKE '%{data["value"]}%'"""
+            
         
-    
-    if data["option"] == "Items":
-        branches=[]
-        getbranches="SELECT DISTINCT Branch FROM header WHERE Branch IS NOT NULL"
-        cur2.execute(getbranches)
-        Columns=""
-        for row in cur2:
-            branches.append(row[0])
-        
-        for idx, branch in enumerate(branches):
-            if idx == len(branches) - 1:
-                Columns += f"SUM(CASE WHEN gt.Branch = '{branch}' THEN gt.AvQty ELSE 0 END) AS Br{branch}"
-            else:
-                Columns += f"SUM(CASE WHEN gt.Branch = '{branch}' THEN gt.AvQty ELSE 0 END) AS Br{branch},"
+        if data["option"] == "Items":
+            branches=[]
+            getbranches="SELECT DISTINCT Branch FROM header WHERE Branch IS NOT NULL"
+            cur2.execute(getbranches)
+            Columns=""
+            for row in cur2:
+                branches.append(row[0])
+            
+            for idx, branch in enumerate(branches):
+                if idx == len(branches) - 1:
+                    Columns += f"SUM(CASE WHEN gt.Branch = '{branch}' THEN gt.AvQty ELSE 0 END) AS Br{branch}"
+                else:
+                    Columns += f"SUM(CASE WHEN gt.Branch = '{branch}' THEN gt.AvQty ELSE 0 END) AS Br{branch},"
 
-        if data["SATFromBranch"] != "N" and data["SATToBranch"] !="N":
-            baseQuary = f"SELECT go.*,COALESCE(gts.Stock,0),{Columns} FROM goods go LEFT JOIN(SELECT SUM(Qin-Qout) as AvQty,ItemNo,Branch FROM goodstrans  WHERE Branch={data['SATFromBranch']} GROUP BY ItemNo,Branch) gt ON go.ItemNo=gt.ItemNo "
-            
-        else:
-            baseQuary = f"SELECT go.*,COALESCE(gts.Stock,0),{Columns} FROM goods go LEFT JOIN(SELECT SUM(Qin-Qout) as AvQty,ItemNo,Branch FROM goodstrans GROUP BY ItemNo,Branch) gt ON go.ItemNo=gt.ItemNo "
-        baseQuary= baseQuary + f" LEFT JOIN(SELECT SUM(Qin-Qout) as Stock,ItemNo FROM goodstrans GROUP BY ItemNo) gts ON gts.ItemNo=go.ItemNo "
-        #ItemsByBranchQuery=f"SELECT Branch,Sum(Qin-Qout) as BrQty FROM goodstrans WHERE ItemNo='{data["value"]}'"
-        if data["value"] =="":
-            baseQuary = baseQuary +" WHERE go.itemno not like '%ALLDATA%' "
-            if data["groupName"]!="":
+            if data["SATFromBranch"] != "N" and data["SATToBranch"] !="N":
+                baseQuary = f"SELECT go.*,COALESCE(gts.Stock,0),{Columns} FROM goods go LEFT JOIN(SELECT SUM(Qin-Qout) as AvQty,ItemNo,Branch FROM goodstrans  WHERE Branch={data['SATFromBranch']} GROUP BY ItemNo,Branch) gt ON go.ItemNo=gt.ItemNo "
                 
-                baseQuary=baseQuary +f" AND {data['groupType']} = '{data['groupName']}' " 
-            baseQuary = baseQuary +" GROUP BY go.itemno "
-            
-        elif data["value"] != "":
-            if data["groupName"]!="":
-                baseQuary1=baseQuary +f" WHERE go.itemno not like '%ALLDATA%' and go.itemno='{data['value']}' AND {data['groupType']} = '{data['groupName']}' GROUP BY go.itemno limit 1000;" 
             else:
-                 baseQuary1=baseQuary1 + f" WHERE go.itemno not like '%ALLDATA%' and go.itemno='{data['value']}' GROUP BY go.itemno limit 1000;"
-            print(baseQuary1)
-            cur.execute(baseQuary1)
+                baseQuary = f"SELECT go.*,COALESCE(gts.Stock,0),{Columns} FROM goods go LEFT JOIN(SELECT SUM(Qin-Qout) as AvQty,ItemNo,Branch FROM goodstrans GROUP BY ItemNo,Branch) gt ON go.ItemNo=gt.ItemNo "
+            baseQuary= baseQuary + f" LEFT JOIN(SELECT SUM(Qin-Qout) as Stock,ItemNo FROM goodstrans GROUP BY ItemNo) gts ON gts.ItemNo=go.ItemNo "
+            #ItemsByBranchQuery=f"SELECT Branch,Sum(Qin-Qout) as BrQty FROM goodstrans WHERE ItemNo='{data["value"]}'"
+            if data["value"] =="":
+                baseQuary = baseQuary +" WHERE go.itemno not like '%ALLDATA%' "
+                if data["groupName"]!="":
+                    
+                    baseQuary=baseQuary +f" AND {data['groupType']} = '{data['groupName']}' " 
+                baseQuary = baseQuary +" GROUP BY go.itemno "
+                
+            elif data["value"] != "":
+                if data["groupName"]!="":
+                    baseQuary1=baseQuary +f" WHERE go.itemno not like '%ALLDATA%' and go.itemno='{data['value']}' AND {data['groupType']} = '{data['groupName']}' GROUP BY go.itemno limit 1000;" 
+                else:
+                    baseQuary1=baseQuary + f" WHERE go.itemno not like '%ALLDATA%' and go.itemno='{data['value']}' GROUP BY go.itemno limit 1000;"
+                print(baseQuary1)
+                cur.execute(baseQuary1)
+                
             
-          
+                for row in cur:
+                    branchesStock = {}
+                    brIndex = 1
+                    for br in branches:
+                        branchesStock[f"{br}"] = row[34 + brIndex]
+                        brIndex += 1
+                    item_dict = {
+                    "ItemNo": row[0],
+                    "ItemName": row[1],
+                    "ItemName2": row[2],
+                    "MainNo": row[3],
+                    "SetG": row[4],
+                    "Category": row[5],
+                    "Unit": row[6],
+                    "Brand": row[7],
+                    "Origin": row[8],
+                    "Supplier": row[9],
+                    "Sizeg": row[10],
+                    "Color": row[11],
+                    "Family": row[12],
+                    "Groupg": row[13],
+                    "Tax": row[14],
+                    "SPrice1": row[15],
+                    "Sprice2": row[16],
+                    "SPrice3": row[17],
+                    "Disc1": row[18],
+                    "Disc2": row[19],
+                    "Disc3": row[20],
+                    "CostPrice": row[21],
+                    "FobCost": row[22],
+                    "AvPrice": row[23],
+                    "BPUnit": row[24],
+                    "PQty": row[25],
+                    "PUnit": row[26],
+                    "PQUnit": row[27],
+                    "SPUnit": row[28],
+                    "Sprice4": row[29],
+                    "SPrice5": row[30],
+                    "Disc4": row[31],
+                    "Disc5": row[32],
+                    "PPrice": row[33],
+                    "Stock": row[34],
+                    "branchesStock":branchesStock
+                    
+                    }
+                    
+                # Append the dictionary to the list
+                    items_json.append(item_dict)
+                
+                    flagI=1
+                
+                if flagI==0:
+                    baseQuary = baseQuary + f"""  WHERE (itemname LIKE '{data["value"]}%' or itemname LIKE '%{data["value"]}' or itemname LIKE '%{data["value"]}%' or go.itemno LIKE '{data["value"]}%' or itemname2 LIKE '{data["value"]}%' or itemname2 LIKE '%{data["value"]}' or itemname2 LIKE '%{data["value"]}%')   """
+                    if data["groupName"]!="":
+                        baseQuary=baseQuary +f" AND {data['groupType']} = '{data['groupName']}' " 
+                    baseQuary= baseQuary+ " GROUP BY go.itemno "
+        print(flagA)
+        print(flagI)
+        if flagI == 0 and flagA==0:
+            baseQuary = baseQuary + " limit 1000 "
+            print(baseQuary)
+            cur.execute(baseQuary)
+
+
+        #print(baseQuary)
+        
+        if data["option"] == "Items" and flagI == 0:
+            # Iterate over rows fetched from the cursor
             for row in cur:
+                # Construct a dictionary for the current row
                 branchesStock = {}
                 brIndex = 1
                 for br in branches:
-                    branchesStock[f"Br{br}"] = row[34 + brIndex]
+                    branchesStock[f"{br}"] = row[34 + brIndex]
                     brIndex += 1
                 item_dict = {
-                "ItemNo": row[0],
-                "ItemName": row[1],
-                "ItemName2": row[2],
-                "MainNo": row[3],
-                "SetG": row[4],
-                "Category": row[5],
-                "Unit": row[6],
-                "Brand": row[7],
-                "Origin": row[8],
-                "Supplier": row[9],
-                "Sizeg": row[10],
-                "Color": row[11],
-                "Family": row[12],
-                "Groupg": row[13],
-                "Tax": row[14],
-                "SPrice1": row[15],
-                "Sprice2": row[16],
-                "SPrice3": row[17],
-                "Disc1": row[18],
-                "Disc2": row[19],
-                "Disc3": row[20],
-                "CostPrice": row[21],
-                "FobCost": row[22],
-                "AvPrice": row[23],
-                "BPUnit": row[24],
-                "PQty": row[25],
-                "PUnit": row[26],
-                "PQUnit": row[27],
-                "SPUnit": row[28],
-                "Sprice4": row[29],
-                "SPrice5": row[30],
-                "Disc4": row[31],
-                "Disc5": row[32],
-                "PPrice": row[33],
-                "Stock": row[34],
-                "branchesStock":branchesStock
-                
+                    "ItemNo": row[0],
+                    "ItemName": row[1],
+                    "ItemName2": row[2],
+                    "MainNo": row[3],
+                    "SetG": row[4],
+                    "Category": row[5],
+                    "Unit": row[6],
+                    "Brand": row[7],
+                    "Origin": row[8],
+                    "Supplier": row[9],
+                    "Sizeg": row[10],
+                    "Color": row[11],
+                    "Family": row[12],
+                    "Groupg": row[13],
+                    "Tax": row[14],
+                    "SPrice1": row[15],
+                    "Sprice2": row[16],
+                    "SPrice3": row[17],
+                    "Disc1": row[18],
+                    "Disc2": row[19],
+                    "Disc3": row[20],
+                    "CostPrice": row[21],
+                    "FobCost": row[22],
+                    "AvPrice": row[23],
+                    "BPUnit": row[24],
+                    "PQty": row[25],
+                    "PUnit": row[26],
+                    "PQUnit": row[27],
+                    "SPUnit": row[28],
+                    "Sprice4": row[29],
+                    "SPrice5": row[30],
+                    "Disc4": row[31],
+                    "Disc5": row[32],
+                    "PPrice": row[33],
+                    "Stock":row[34],
+                    "branchesStock":branchesStock
+
                 }
-                
-            # Append the dictionary to the list
+
+                # Append the dictionary to the list
                 items_json.append(item_dict)
-              
-                flagI=1
+        elif data["option"] == "Accounts" and flagA == 0:
+                # Iterate over the rows fetched from the database
+            for row in cur:
+                # Construct a dictionary for the current row
+                account_dict = {
+                    "AccNo": row[0],
+                    "AccName": row[1],
+                    "Cur": row[2],
+                    "SETA": row[3],
+                    "Category": row[4],
+                    "Price": row[5],
+                    "Contact": row[6],
+                    "TaxNo": row[7],
+                    "SMan": row[8],
+                    "Address": row[9],
+                    "Tel": row[10],
+                    "Mobile": row[11],
+                    "AccName2": row[12],
+                    "Fax": row[13],
+                    "Balance": row[14]
+                }
+                # Append the dictionary to the results list
+                items_json.append(account_dict)
+        
             
-            if flagI==0:
-                baseQuary = baseQuary + f"""  WHERE (itemname LIKE '{data["value"]}%' or itemname LIKE '%{data["value"]}' or itemname LIKE '%{data["value"]}%' or go.itemno LIKE '{data["value"]}%' or itemname2 LIKE '{data["value"]}%' or itemname2 LIKE '%{data["value"]}' or itemname2 LIKE '%{data["value"]}%')   """
-                if data["groupName"]!="":
-                    baseQuary=baseQuary +f" AND {data['groupType']} = '{data['groupName']}' " 
-                baseQuary= baseQuary+ " GROUP BY go.itemno "
-    print(flagA)
-    print(flagI)
-    if flagI == 0 and flagA==0:
-        baseQuary = baseQuary + " limit 1000 "
-        print(baseQuary)
-        cur.execute(baseQuary)
 
-
-    #print(baseQuary)
-    
-    if data["option"] == "Items" and flagI == 0:
-        # Iterate over rows fetched from the cursor
-        for row in cur:
-            # Construct a dictionary for the current row
-            branchesStock = {}
-            brIndex = 1
-            for br in branches:
-                branchesStock[f"Br{br}"] = row[34 + brIndex]
-                brIndex += 1
-            item_dict = {
-                "ItemNo": row[0],
-                "ItemName": row[1],
-                "ItemName2": row[2],
-                "MainNo": row[3],
-                "SetG": row[4],
-                "Category": row[5],
-                "Unit": row[6],
-                "Brand": row[7],
-                "Origin": row[8],
-                "Supplier": row[9],
-                "Sizeg": row[10],
-                "Color": row[11],
-                "Family": row[12],
-                "Groupg": row[13],
-                "Tax": row[14],
-                "SPrice1": row[15],
-                "Sprice2": row[16],
-                "SPrice3": row[17],
-                "Disc1": row[18],
-                "Disc2": row[19],
-                "Disc3": row[20],
-                "CostPrice": row[21],
-                "FobCost": row[22],
-                "AvPrice": row[23],
-                "BPUnit": row[24],
-                "PQty": row[25],
-                "PUnit": row[26],
-                "PQUnit": row[27],
-                "SPUnit": row[28],
-                "Sprice4": row[29],
-                "SPrice5": row[30],
-                "Disc4": row[31],
-                "Disc5": row[32],
-                "PPrice": row[33],
-                "Stock":row[34],
-                "branchesStock":branchesStock
-
-            }
-
-            # Append the dictionary to the list
-            items_json.append(item_dict)
-    elif data["option"] == "Accounts" and flagA == 0:
-             # Iterate over the rows fetched from the database
-        for row in cur:
-            # Construct a dictionary for the current row
-            account_dict = {
-                "AccNo": row[0],
-                "AccName": row[1],
-                "Cur": row[2],
-                "SETA": row[3],
-                "Category": row[4],
-                "Price": row[5],
-                "Contact": row[6],
-                "TaxNo": row[7],
-                "SMan": row[8],
-                "Address": row[9],
-                "Tel": row[10],
-                "Mobile": row[11],
-                "AccName2": row[12],
-                "Fax": row[13],
-                "Balance": row[14]
-            }
-            # Append the dictionary to the results list
-            items_json.append(account_dict)
-    
+        # Convert the list of dictionaries to JSON
         
-
-    # Convert the list of dictionaries to JSON
     
-   
-               
-    r = list(items_json)
-
-    return{
-        "Info":"authorized",
-        "opp":r
-    }
+                
+        r = list(items_json)
         
+        return{
+            "Info":"authorized",
+            "opp":r
+        }
+    except Exception as e:       
+            print(f"Error connecting to MariaDB Platform: {e}")  
+            
+            return{"Info":"error",
+                    "msg":f"{e}"} 
 
 @app.get("/moh/{uid}/Accounting/{limit}/",status_code=200)
 async def Accounting(uid:str,limit:int):
