@@ -2249,7 +2249,8 @@ async def newInvoice(data:dict):
 
 
         return{"Info":"authorized",
-            "msg":"successfull"}
+            "msg":"successfull",
+            "ref_no":ref_no}
         
 
     except Exception as e:
