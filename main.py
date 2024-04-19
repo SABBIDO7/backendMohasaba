@@ -213,8 +213,8 @@ async def getAccounts(data:dict):
     except mariadb.Error as e:       
             print(f"Error connecting to MariaDB Platform: {e}")  
             
-            return({"Info":"unauthorized",
-                    "msg":{e}})
+            return{"Info":"error",
+                    "msg":f"{e}"}
     
     cur = conn.cursor()
     cur2 = conn.cursor()
