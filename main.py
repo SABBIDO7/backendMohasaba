@@ -2342,14 +2342,14 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
             Columns += f"""SUM(CASE WHEN gt.Branch = '{branch}' THEN gt.AvQty ELSE 0 END) AS Br{branch},
             """
     #print(InvoiceId)
-    baseQuery = f"""SELECT i.*,iv.*,g.{SalePrice},ld.Balance,lh.Address,lh.Cur,COALESCE(gts.Stock,0) FROM inv i 
+    baseQuery = f"""SELECT i.*,iv.*,g.{SalePrice},ld.Balance,lh.Address,lh.Cur,lh.Mobile,COALESCE(gts.Stock,0) FROM inv i 
     LEFT JOIN(SELECT * FROM invnum) iv ON i.RefNo = iv.RefNo
     LEFT JOIN (SELECT {SalePrice},ItemNo FROM goods) g ON i.ItemNo = g.ItemNo
     LEFT JOIN (SELECT SUM(DB-CR) as Balance,AccNo FROM listdaily GROUP BY AccNo) ld ON iv.AccNo = ld.AccNo
-    LEFT JOIN (SELECT Address,Cur,AccNo FROM listhisab) lh ON iv.AccNo = lh.AccNo
+    LEFT JOIN (SELECT Address,Cur,AccNo,Mobile FROM listhisab) lh ON iv.AccNo = lh.AccNo
     LEFT JOIN (SELECT ItemNo,SUM(Qin-Qout) as Stock FROM goodstrans GROUP BY ItemNo) gts ON gts.ItemNo=i.ItemNo
     WHERE i.User1='{user}' AND i.RefNo={InvoiceId}"""
-    
+    print(baseQuery)
     cur.execute(baseQuery)
     invoices = []
     InvProfile=[]
@@ -2384,7 +2384,7 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
                 "SPUnit": invoice[22],
                 "BPUnit":invoice[23],
                 "InitialPrice":invoice[38],
-                "TotalStockQty":invoice[42]
+                "TotalStockQty":invoice[43]
                
             }
         invoices.append(inv)
@@ -2403,7 +2403,8 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
                 "Rate": invoice[37],
                 "balance":invoice[39],
                 "address":invoice[40],
-                "cur":invoice[41]
+                "cur":invoice[41],
+                "mobile":invoice[42]
                 # "DateP": invoice[26],
                 # "TimeP": invoice[27],
                 # "UserP": invoice[28]
@@ -2654,7 +2655,24 @@ async def Invoice_Group_Select(data:dict):
     "message":"Success",
      "groupTypes":groupTypes }
 
-
+@app.post("/moh/savePhoneNumber/{username}/{phoneNumber}/{AccountId}/")
+async def savePhoneNumber(AccountId:str,phoneNumber:str,username:str):
+    try:
+        conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+    
+    
+        cur = conn.cursor()
+        cur.execute(f"UPDATE listhisab SET Mobile='{phoneNumber}' WHERE AccNo='{AccountId}' ")
+        conn.commit()
+        return{
+        "Info":"authorized",
+        "message":"Success"  }
+    except Exception as e:       
+        print(f"Error : {e}")  
+        response.status_code = status.HTTP_401_UNAUTHORIZED
+        return({"Info":"Failed",
+                    "msg":{e}})
 
 
 
