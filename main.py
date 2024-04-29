@@ -2172,9 +2172,9 @@ async def newInvoice(data:dict):
             cur.execute(f"DELETE FROM goodstrans WHERE RefNo='{data['accRefNo']}' AND RefType='{data['type']}' ")
             conn.commit()
         
-            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`,`RefNo`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`) VALUES ('{data["username"]}', '{data["type"]}','{data["accRefNo"]}', '{data["accno"]}', '{data["accname"]}', '{Branch}', '{TBranch}', '{data["accDate"]}', '{data["accTime"]}', '','','','{data["Cur"]}','{data["Rate"]}'); """
+            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`,`RefNo`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`,`long`,`lat`,`Note`) VALUES ('{data["username"]}', '{data["type"]}','{data["accRefNo"]}', '{data["accno"]}', '{data["accname"]}', '{Branch}', '{TBranch}', '{data["accDate"]}', '{data["accTime"]}', '','','','{data["Cur"]}','{data["Rate"]}','{data["long"]}','{data["lat"]}',''); """
         else:
-            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`) VALUES ('{data["username"]}', '{data["type"]}', '{data["accno"]}', '{data["accname"]}', '{Branch}', '{TBranch}', '{data["accDate"]}', '{data["accTime"]}', '','','','{data["Cur"]}','{data["Rate"]}'); """
+            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`,`Note`) VALUES ('{data["username"]}', '{data["type"]}', '{data["accno"]}', '{data["accname"]}', '{Branch}', '{TBranch}', '{data["accDate"]}', '{data["accTime"]}', '','','','{data["Cur"]}','{data["Rate"]}','{data["long"]}','{data["lat"]}',''); """
 
         
         cur.execute(basequery)
@@ -2269,7 +2269,7 @@ async def getInvoiceHistory(username:str,user:str):
         return({"Info":"unauthorized",
                 "msg":{e}})
     cur = conn.cursor()
-    baseQuery = f"""SELECT * FROM invnum WHERE (UserP='' or UserP='{user}') AND User1='{user}'"""
+    baseQuery = f"""SELECT * FROM invnum WHERE (UserP='' or UserP='{user}') AND User1='{user}' AND RefType!='CHK_AP' """
     cur.execute(baseQuery)
     invoices = []
     for invoice in cur:
@@ -2383,8 +2383,8 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
                 "TotalPieces":invoice[21],
                 "SPUnit": invoice[22],
                 "BPUnit":invoice[23],
-                "InitialPrice":invoice[38],
-                "TotalStockQty":invoice[43]
+                "InitialPrice":invoice[41],
+                "TotalStockQty":invoice[46]
                
             }
         invoices.append(inv)
@@ -2401,10 +2401,13 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
                 "time": invoice[32],
                 "CurNum": invoice[36],
                 "Rate": invoice[37],
-                "balance":invoice[39],
-                "address":invoice[40],
-                "cur":invoice[41],
-                "mobile":invoice[42]
+                "long": invoice[38],
+                "lat" :invoice[39],
+                "Note": invoice[40],
+                "balance":invoice[42],
+                "address":invoice[43],
+                "cur":invoice[44],
+                "mobile":invoice[45]
                 # "DateP": invoice[26],
                 # "TimeP": invoice[27],
                 # "UserP": invoice[28]
@@ -2674,7 +2677,31 @@ async def savePhoneNumber(AccountId:str,phoneNumber:str,username:str):
         return({"Info":"Failed",
                     "msg":{e}})
 
-
+@app.post("/moh/CheckIn/")
+async def CheckIn(data:dict):
+    try:
+        username = data["compname"]
+        conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+        accname=""
+    
+        cur = conn.cursor()
+        basequery1=f"SELECT AccNo,AccName FROM listhisab WHERE AccNo='{data["accno"]}'"
+        print(basequery1)
+        cur.execute(basequery1)
+        for row in cur:
+             accname=row[1]
+        basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`,`long`,`lat`,`Note`) VALUES ('{data["username"]}', '{data["type"]}','{data["accno"]}', '{accname}', '', '', '{data["accDate"]}', '{data["accTime"]}', '','','','','','{data["long"]}','{data["lat"]}',''); """
+        print(basequery)
+        conn.commit()
+        return{
+        "Info":"authorized",
+        "message":"Success"  }
+    except Exception as e:       
+        print(f"Error : {e}")  
+        response.status_code = status.HTTP_401_UNAUTHORIZED
+        return({"Info":"Failed",
+                    "msg":{e}})
 
 
 
