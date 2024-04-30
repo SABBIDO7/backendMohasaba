@@ -2689,20 +2689,31 @@ async def CheckIn(data:dict):
         basequery1=f"SELECT AccNo,AccName FROM listhisab WHERE AccNo='{data["accno"]}'"
         print(basequery1)
         cur.execute(basequery1)
-        for row in cur:
-             accname=row[1]
+        # for row in cur:
+        #      accname=row[1]
+        rows = cur.fetchall()
+
+        if rows:  # Check if any rows are returned
+            for row in rows:
+                accname = row[1]
+        else:
+            # Handle case when no rows are returned
+            return({"Info":"authorized","flag":0,
+                    "message":"No Account Found","Account":data["accno"]})
         basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`,`long`,`lat`,`Note`) VALUES ('{data["username"]}', '{data["type"]}','{data["accno"]}', '{accname}', '', '', '{data["accDate"]}', '{data["accTime"]}', '','','','',0,'{data["long"]}','{data["lat"]}',''); """
         print(basequery)
         cur.execute(basequery)
         conn.commit()
         return{
         "Info":"authorized",
-        "message":"Success"  }
+        "message":"Success",
+        "flag":1,
+          "Account": accname }
     except Exception as e:       
         print(f"Error : {e}")  
         response.status_code = status.HTTP_401_UNAUTHORIZED
         return({"Info":"Failed",
-                    "msg":{e}})
+                    "message":{e}})
 
 
 
