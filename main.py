@@ -2174,7 +2174,7 @@ async def newInvoice(data:dict):
         
             basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`,`RefNo`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`,`long`,`lat`,`Note`) VALUES ('{data["username"]}', '{data["type"]}','{data["accRefNo"]}', '{data["accno"]}', '{data["accname"]}', '{Branch}', '{TBranch}', '{data["accDate"]}', '{data["accTime"]}', '','','','{data["Cur"]}','{data["Rate"]}','{data["long"]}','{data["lat"]}',''); """
         else:
-            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`,`Note`) VALUES ('{data["username"]}', '{data["type"]}', '{data["accno"]}', '{data["accname"]}', '{Branch}', '{TBranch}', '{data["accDate"]}', '{data["accTime"]}', '','','','{data["Cur"]}','{data["Rate"]}','{data["long"]}','{data["lat"]}',''); """
+            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`,`long`,`lat`,`Note`) VALUES ('{data["username"]}', '{data["type"]}', '{data["accno"]}', '{data["accname"]}', '{Branch}', '{TBranch}', '{data["accDate"]}', '{data["accTime"]}', '','','','{data["Cur"]}','{data["Rate"]}','{data["long"]}','{data["lat"]}',''); """
 
         
         cur.execute(basequery)
@@ -2561,8 +2561,8 @@ async def getCompanyInfo(compname:str):
                     "VISA5":info[16],
                     "VISA6":info[17],
                     "GroupType":info[18],
-                    "PrintFormat":info[19],
-                    "GrpSearchMethod":info[20]
+                    "PrintFormat":info[19]
+                    
                 }
              }
         
@@ -2691,8 +2691,9 @@ async def CheckIn(data:dict):
         cur.execute(basequery1)
         for row in cur:
              accname=row[1]
-        basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`,`long`,`lat`,`Note`) VALUES ('{data["username"]}', '{data["type"]}','{data["accno"]}', '{accname}', '', '', '{data["accDate"]}', '{data["accTime"]}', '','','','','','{data["long"]}','{data["lat"]}',''); """
+        basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`,`long`,`lat`,`Note`) VALUES ('{data["username"]}', '{data["type"]}','{data["accno"]}', '{accname}', '', '', '{data["accDate"]}', '{data["accTime"]}', '','','','',0,'{data["long"]}','{data["lat"]}',''); """
         print(basequery)
+        cur.execute(basequery)
         conn.commit()
         return{
         "Info":"authorized",
