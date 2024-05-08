@@ -2561,7 +2561,8 @@ async def getCompanyInfo(compname:str):
                     "VISA5":info[16],
                     "VISA6":info[17],
                     "GroupType":info[18],
-                    "PrintFormat":info[19]
+                    "PrintFormat":info[19],
+                    "CompanyCode": info[20]
                     
                 }
              }
