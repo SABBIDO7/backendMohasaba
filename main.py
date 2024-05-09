@@ -2562,7 +2562,8 @@ async def getCompanyInfo(compname:str):
                     "VISA6":info[17],
                     "GroupType":info[18],
                     "PrintFormat":info[19],
-                    "CompanyCode": info[20]
+                    "CompanyCode": info[20],
+                    "Notify":info[21]
                     
                 }
              }
@@ -2684,24 +2685,29 @@ async def CheckIn(data:dict):
         username = data["compname"]
         conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
         #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+
         accname=""
     
         cur = conn.cursor()
-        basequery1=f"SELECT AccNo,AccName FROM listhisab WHERE AccNo='{data["accno"]}'"
-        print(basequery1)
-        cur.execute(basequery1)
-        # for row in cur:
-        #      accname=row[1]
-        rows = cur.fetchall()
+        if data["method"]!="Note":
+             
+            basequery1=f"SELECT AccNo,AccName FROM listhisab WHERE AccNo='{data["accno"]}'"
+            print(basequery1)
+            cur.execute(basequery1)
+            # for row in cur:
+            #      accname=row[1]
+            rows = cur.fetchall()
 
-        if rows:  # Check if any rows are returned
-            for row in rows:
-                accname = row[1]
+            if rows:  # Check if any rows are returned
+                for row in rows:
+                    accname = row[1]
+            else:
+                # Handle case when no rows are returned
+                return({"Info":"authorized","flag":0,
+                        "message":"No Account Found","Account":data["accno"]})
         else:
-            # Handle case when no rows are returned
-            return({"Info":"authorized","flag":0,
-                    "message":"No Account Found","Account":data["accno"]})
-        basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`,`long`,`lat`,`Note`) VALUES ('{data["username"]}', '{data["type"]}','{data["accno"]}', '{accname}', '', '', '{data["accDate"]}', '{data["accTime"]}', '','','','',0,'{data["long"]}','{data["lat"]}',''); """
+            accname=data["Note"]
+        basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`,`long`,`lat`,`Note`) VALUES ('{data["username"]}', '{data["type"]}','{data["accno"]}', '{accname}', '', '', '{data["accDate"]}', '{data["accTime"]}', '','','','',0,'{data["long"]}','{data["lat"]}','{data["Note"]}'); """
         print(basequery)
         cur.execute(basequery)
         conn.commit()
