@@ -170,7 +170,10 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
                         ChangeBranch="Y"
                     else:
                         ChangeBranch=users[23].upper()
-                   
+                    if users[24] == "" or users[24]==None:
+                        CheckInReport="Y"
+                    else:
+                        CheckInReport=users[24].upper()
                     return{
                         "Info":"authorized",
                         "compname":users[0].upper(),
@@ -193,7 +196,8 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
                             "PurchaseReturnForm":PurchaseReturnForm,
                             "BranchTransferForm":BranchTransferForm,
                             "SalesUnderZero":SalesUnderZero,
-                            "ChangeBranch":ChangeBranch
+                            "ChangeBranch":ChangeBranch,
+                            "CheckInReport":CheckInReport
 
                         }
                     }
@@ -2722,47 +2726,32 @@ async def CheckIn(data:dict):
         return({"Info":"Failed",
                     "message":{e}})
 
-
-
-        # for item in items:
-        #     if item == "":
-        #         pass
-        #     else:
-        #         pdate = ddate[0] + "/" + ddate[1] + "/" + ddate[2]
-        #         att = str(item).split(";")
-                
-        #         total = float(att[1]) * float(att[2]) - (float(att[1]) * float(att[2]) * float(att[4]) ) / 100
-                
-        #         cur.execute(f"""
-        #                     UPDATE {compname}.goodsqty SET Qty = Qty - {float(att[1])}  WHERE  `ItemNo`='{att[0]}' AND `BR`='{att[3]}';
-        #                     """)
+@app.post("/moh/CheckInDashboard/")
+async def  CheckInDashboard(data:dict):
+    try:
+        username = data["compname"]
+        conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+        cur = conn.cursor()
+        query = f"SELECT User1,RefNo,AccName,DateI,TimeI,long,lat  FROM invnum WHERE RefType='CHK_AP' "
+        if data["search"]!='':
+            query=query + f""" AND (User1 LIKE '%{data["search"]}' OR User1 LIKE '{data["search"]}%' OR User1 LIKE '%{data["search"]}%' OR AccName LIKE '{data["search"]}%' OR AccName LIKE '{data["search"]}%' OR AccName LIKE '{data["search"]}%' OR Note LIKE '{data["search"]}%' OR Note LIKE '{data["search"]}%' OR Note LIKE '{data["search"]}%') OR RefNo LIKE '{data["search"]}%' OR RefNo LIKE '{data["search"]}%' OR RefNo LIKE '{data["search"]}%' """
+        if data['fromDate']!='':
+            query = query + f" AND "
+        if data['toDate']!='':
+            query = query + f" AND "
         
-        #         cur.execute(f"""
-        #                     UPDATE {compname}.goodsbr SET Qty1 = Qty1 - {float(att[1])}  WHERE  `ItemNoQ`='{att[0]}' AND `BR`='{att[3]}';
-        #                     """)
-                
-        #         cur.execute(f"""
-        #                     INSERT INTO `{compname}`.`goodstrans` (`RefType`, `RefNo`, `TDate`, `LN`, `ItemNo`, `Branch`, `PQty`, `Qty`, `UPrice`, `UFob`, `PQUnit`, `Disc`, `Weight`, `Notes`, `Tax`, `Total`, `AccNo`, `Disc100`, `AccName`, `ItemName`) 
-                            
-        #                     VALUES ('{data['type']}', '{refnumber}', '{pdate}', '{idx}', '{att[0]}', '{att[3]}', '0', '{float(att[1])}', '{float(att[2])}', '0', '', '0', '0', '', '{float(att[5])}', '{total}', '{data["accno"]}', '{float(att[4])}', '{data["accname"]}', '');
+        if data['time']!='':
+            query = query + f" AND "
+        if data['user']!='':
+            query = query + f" AND User1 LIKE '%{data['user']}' OR User1 LIKE '{data['user']}%' OR User1 LIKE '%{data['user']}%'"
+        
 
-        #                     """)
-        #     idx = idx + 1
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Assuming you have a database connection pool setup
-
+    except Exception as e:       
+        print(f"Error : {e}")  
+        response.status_code = status.HTTP_401_UNAUTHORIZED
+        return({"Info":"Failed",
+                    "message":{e}})    
 
 # @app.get("/inv")
 # async def fetch_inv():
