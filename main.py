@@ -17,6 +17,8 @@ from fastapi import FastAPI, Form, status,HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
+from fastapi.responses import JSONResponse
+
 
 # from fastapi import FastAPI, WebSocket
 # from starlette.responses import JSONResponse
@@ -2726,27 +2728,78 @@ async def CheckIn(data:dict):
         return({"Info":"Failed",
                     "message":{e}})
 
+
+@app.get("/moh/getUsers/{compname}/")
+async def getUsers(compname:str):
+    try:
+        username = compname
+        userResult=[]
+        conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+        cur = conn.cursor()
+        query = f"SELECT DISTINCT User1 FROM invnum  "
+        cur.execute(query)
+        for result in cur:
+            userResult.append(result[0])
+        print(userResult)
+       
+        return {"status":"success","result":userResult}
+    except Exception as e:       
+        print(f"Error : {e}")  
+        return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"Info": "Failed", "message": str(e)})
+ 
 @app.post("/moh/CheckInDashboard/")
 async def  CheckInDashboard(data:dict):
     try:
         username = data["compname"]
+        searchResult=[]
+        print(data)
         conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
         #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
         cur = conn.cursor()
-        query = f"SELECT User1,RefNo,AccName,DateI,TimeI,long,lat  FROM invnum WHERE RefType='CHK_AP' "
+        query = f"SELECT User1,RefNo,AccName,DateI,TimeI,`long`,lat,Note,AccNo  FROM invnum WHERE RefType='CHK_AP' "
         if data["search"]!='':
-            query=query + f""" AND (User1 LIKE '%{data["search"]}' OR User1 LIKE '{data["search"]}%' OR User1 LIKE '%{data["search"]}%' OR AccName LIKE '{data["search"]}%' OR AccName LIKE '{data["search"]}%' OR AccName LIKE '{data["search"]}%' OR Note LIKE '{data["search"]}%' OR Note LIKE '{data["search"]}%' OR Note LIKE '{data["search"]}%') OR RefNo LIKE '{data["search"]}%' OR RefNo LIKE '{data["search"]}%' OR RefNo LIKE '{data["search"]}%' """
-        if data['fromDate']!='':
-            query = query + f" AND "
-        if data['toDate']!='':
-            query = query + f" AND "
+            query=query + f""" AND (User1 LIKE '%{data["search"]}' OR User1 LIKE '{data["search"]}%' OR User1 LIKE '%{data["search"]}%' OR AccName LIKE '%{data["search"]}' OR AccName LIKE '{data["search"]}%' OR AccName LIKE '%{data["search"]}%' OR Note LIKE '%{data["search"]}' OR Note LIKE '{data["search"]}%' OR Note LIKE '%{data["search"]}%' OR RefNo LIKE '{data["search"]}%' OR RefNo LIKE '%{data["search"]}' OR RefNo LIKE '%{data["search"]}%' OR AccNo LIKE '{data["search"]}%' OR AccNo LIKE '%{data["search"]}' OR AccNo LIKE '%{data["search"]}%') """
+        if data['fromDate']!=None:
+            #from_date = datetime.strptime(data["fromDate"], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%d/%m/%Y")
+            print()
+            query = query + f" AND STR_TO_DATE(DateI, '%d/%m/%Y') >=  STR_TO_DATE('{data['fromDate']}', '%d/%m/%Y') "
+        if data['toDate']!=None:
+            #to_date = datetime.strptime(data["toDate"], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%d/%m/%Y")
+            query = query + f" AND STR_TO_DATE(DateI, '%d/%m/%Y') <= STR_TO_DATE('{data['toDate']}', '%d/%m/%Y') "
         
-        if data['time']!='':
-            query = query + f" AND "
-        if data['user']!='':
-            query = query + f" AND User1 LIKE '%{data['user']}' OR User1 LIKE '{data['user']}%' OR User1 LIKE '%{data['user']}%'"
-        
+        if data['toTime']!=None:
+            # to_time = datetime.strptime(data['toTime'], "T%H:%M:%S")
+            # to_time_formatted = to_time.strftime("%H:%M:%S")
+            query = query + f" AND TimeI <= '{data['toTime']}' "
+        if data['fromTime']!=None:
+            # from_time = datetime.strptime(data['fromTime'], "T%H:%M:%S")
+            # from_time_formatted = from_time.strftime("%H:%M:%S")
+            query = query + f" AND TimeI >= '{data['fromTime']}' "
 
+        if data['user']!='':
+            query = query + f" AND (User1 LIKE '%{data['user']}' OR User1 LIKE '{data['user']}%' OR User1 LIKE '%{data['user']}%' ) "
+        if data['limit']!="All":
+            query = query + f"ORDER BY STR_TO_DATE(DateI, '%d/%m/%Y') DESC LIMIT {data["limit"]};"
+        else:
+            query = query + "ORDER BY STR_TO_DATE(DateI, '%d/%m/%Y') DESC;"
+        print(query)
+
+        cur.execute(query)
+        for result in cur:
+            result= {
+                "User":result[0],
+                "RefNo":result[1],
+                "AccName": result[2],
+                "DateI": result[3],
+                "TimeI":result[4],
+                "LocationUrl":f"{result[6]},{result[5]}",
+                "Notes": result[7],
+                "AccNo":result[8]
+
+            },
+            searchResult.append(result)
+        return({"Info":"success","result":searchResult})
     except Exception as e:       
         print(f"Error : {e}")  
         response.status_code = status.HTTP_401_UNAUTHORIZED
