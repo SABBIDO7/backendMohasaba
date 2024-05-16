@@ -176,6 +176,8 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
                         CheckInReport="Y"
                     else:
                         CheckInReport=users[24].upper()
+                        
+                    print("dashh",CheckInDashboard)
                     return{
                         "Info":"authorized",
                         "compname":users[0].upper(),
