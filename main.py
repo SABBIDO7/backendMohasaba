@@ -202,13 +202,12 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
                             "SalesUnderZero":SalesUnderZero,
                             "ChangeBranch":ChangeBranch,
                             "CheckInReport":CheckInReport
-
                         }
                     }
 
-    return{"Info":"unauthorized",
+    return {"Info":"unauthorized",
             "msg":"Invalid Username or Password",
-         }
+        }
 
 @app.post("/INVOICE_DATA_SELECT/")
 async def getAccounts(data:dict):
