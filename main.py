@@ -176,8 +176,23 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
                         CheckInReport="Y"
                     else:
                         CheckInReport=users[24].upper()
-                        
-                    print("dashh",CheckInDashboard)
+                    if users[25] == "" or users[25]==None:
+                        AccountingPage="Y"
+                    else:
+                        AccountingPage=users[25].upper()
+                    if users[26] == "" or users[26]==None:
+                        InventoryPage="Y"
+                    else:
+                        InventoryPage=users[26].upper()
+                    if users[27] == "" or users[27]==None:
+                        TransactionsPage="Y"
+                    else:
+                        TransactionsPage=users[27].upper()
+                    if users[28] == "" or users[28]==None:
+                        CheckInPage="Y"
+                    else:
+                        CheckInPage=users[28].upper()
+
                     return{
                         "Info":"authorized",
                         "compname":users[0].upper(),
@@ -201,7 +216,14 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
                             "BranchTransferForm":BranchTransferForm,
                             "SalesUnderZero":SalesUnderZero,
                             "ChangeBranch":ChangeBranch,
-                            "CheckInReport":CheckInReport
+                            "CheckInReport":CheckInReport,
+                            "AccountingPage":AccountingPage,
+                            "InventoryPage":InventoryPage,
+                            "TransactionsPage":TransactionsPage,
+                            "CheckInPage":CheckInPage
+
+
+
                         }
                     }
 
@@ -2570,7 +2592,8 @@ async def getCompanyInfo(compname:str):
                     "GroupType":info[18],
                     "PrintFormat":info[19],
                     "CompanyCode": info[20],
-                    "Notify":info[21]
+                    "Notify":info[21],
+                    "BackOffice":info[22]
                     
                 }
              }
@@ -2697,21 +2720,37 @@ async def CheckIn(data:dict):
     
         cur = conn.cursor()
         if data["method"]!="Note":
-             
-            basequery1=f"SELECT AccNo,AccName FROM listhisab WHERE AccNo='{data["accno"]}'"
-            print(basequery1)
-            cur.execute(basequery1)
-            # for row in cur:
-            #      accname=row[1]
-            rows = cur.fetchall()
 
-            if rows:  # Check if any rows are returned
-                for row in rows:
-                    accname = row[1]
+            if data["BackOffice"] =="Y":
+            
+                basequery1=f"SELECT AccNo,AccName FROM listhisab WHERE AccNo='{data["accno"]}'"
+                print(basequery1)
+                cur.execute(basequery1)
+                # for row in cur:
+                #      accname=row[1]
+                rows = cur.fetchall()
+
+                if rows:  # Check if any rows are returned
+                    for row in rows:
+                        accname = row[1]
+                else:
+                    # Handle case when no rows are returned
+                    return({"Info":"authorized","flag":0,
+                            "message":"No Account Found","Account":data["accno"]})
             else:
-                # Handle case when no rows are returned
-                return({"Info":"authorized","flag":0,
-                        "message":"No Account Found","Account":data["accno"]})
+                try:
+                    accname=data["accno"]
+                    parts = accname.split("__")
+                    if len(parts) > 1:
+                        accname = parts[1]
+                        data['accno']='xxxxxxxx'
+                        data['Note']=parts[0]
+                        print(accname)
+                    else:
+                        raise ValueError("Invalid format for accno")
+                except KeyError:
+                    return({"Info":"Failed",
+                    "message":"Wrong Barcode Format Data"})
         else:
             accname=data["Note"]
         basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`,`long`,`lat`,`Note`) VALUES ('{data["username"]}', '{data["type"]}','{data["accno"]}', '{accname}', '', '', '{data["accDate"]}', '{data["accTime"]}', '','','','',0,'{data["long"]}','{data["lat"]}','{data["Note"]}'); """
