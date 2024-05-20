@@ -2722,7 +2722,17 @@ async def CheckIn(data:dict):
         if data["method"]!="Note":
 
             if data["BackOffice"] =="Y":
-            
+                try:
+                    parts = data['accno'].split("__")
+                    if len(parts) > 1:
+                        data['accno']= parts[0]
+                   
+                        print(accname)
+                    else:
+                        raise ValueError("Invalid format for accno")
+                except KeyError:
+                    return({"Info":"Failed",
+                    "message":"Wrong Barcode Format Data"})
                 basequery1=f"SELECT AccNo,AccName FROM listhisab WHERE AccNo='{data["accno"]}'"
                 print(basequery1)
                 cur.execute(basequery1)
@@ -2820,9 +2830,10 @@ async def  CheckInDashboard(data:dict):
         if data['user']!='':
             query = query + f" AND (User1 LIKE '%{data['user']}' OR User1 LIKE '{data['user']}%' OR User1 LIKE '%{data['user']}%' ) "
         if data['limit']!="All":
-            query = query + f"ORDER BY STR_TO_DATE(DateI, '%d/%m/%Y') DESC LIMIT {data["limit"]};"
+            query = query + f"""ORDER BY STR_TO_DATE(DateI, '%d/%m/%Y') DESC,  STR_TO_DATE(SUBSTRING(TimeI, 2), '%H:%i:%s') DESC 
+ LIMIT {data["limit"]};"""
         else:
-            query = query + "ORDER BY STR_TO_DATE(DateI, '%d/%m/%Y') DESC;"
+            query = query + f"""ORDER BY STR_TO_DATE(DateI, '%d/%m/%Y') DESC,   STR_TO_DATE(SUBSTRING(TimeI, 2), '%H:%i:%s') DESC ;"""
         print(query)
 
         cur.execute(query)
