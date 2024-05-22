@@ -2570,7 +2570,12 @@ async def getCompanyInfo(compname:str):
         cur.execute("SELECT * FROM header limit 1;")
        
         for info in cur:
-            
+            if info[22]==None or info[22]=="":
+                BackOffice="Y"
+            else:
+                BackOffice= info[22].upper()
+
+
             return {"Info":"authorized",
                     "CompanyInfo":{
                     "CompName":info[2],
@@ -2593,7 +2598,7 @@ async def getCompanyInfo(compname:str):
                     "PrintFormat":info[19],
                     "CompanyCode": info[20],
                     "Notify":info[21],
-                    "BackOffice":info[22]
+                    "BackOffice":BackOffice
                     
                 }
              }
