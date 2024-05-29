@@ -2862,6 +2862,111 @@ async def  CheckInDashboard(data:dict):
         return({"Info":"Failed",
                     "message":{e}})    
 
+
+@app.get("/moh/AcccesManagement/{compname}/")
+async def  AcccesManagement(compname:str):
+    try:
+        username =compname.upper()
+        result=[]
+        columnNamesRes=[]
+        branches=[]
+        try:
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = "python") 
+
+            conn2 = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = compname) 
+            #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+        
+        except mariadb.Error as e:       
+            print(f"Error connecting to MariaDB Platform: {e}")  
+            
+            return({"status":"Error",
+                    "message":{e}})
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+        cur = conn.cursor()
+        cur2=conn2.cursor()
+        query = f"SELECT * FROM users WHERE compcode='{username}'"
+        print(query)
+        cur.execute(query)
+        conn.close()
+        cur2.execute("SELECT DISTINCT `Branch` FROM `header` WHERE Branch is not null order by Branch asc;")   
+        conn2.close()
+        branches = []
+        salePrices=['1','2','3','4','5']
+
+        for br in cur2:
+            if br[0] != "":
+                branches.append(br[0])
+        print(branches)
+        column_names = [desc[0] for desc in cur.description]
+        for i in range(8,len(column_names)):
+            columnNamesRes.append(column_names[i])
+        print(columnNamesRes)
+        for userRes in cur:
+            user = {
+                "name": userRes[1],
+                "permissions": [
+                    {column_names[i]: userRes[i] for i in range(8, len(column_names))}
+                ]
+            }
+            # Flatten permissions dictionary and convert to the required format
+            user["permissions"] = [
+                {"name": perm_name, "access": "Y" if perm_access is None or perm_access == '' else perm_access}
+                for perm_name, perm_access in user["permissions"][0].items()
+            ]
+            result.append(user)
+        
+       
+
+        return ({"status": "success",
+                 "users":result,"permissionsName":columnNamesRes,"branches":branches,"salePrices":salePrices})
+
+            
+    except Exception as e:
+        return ({"status": "Error",
+                 "message":{e}})
+    
+
+@app.post("/moh/UpdateUsersPermissions/")
+async def updateUsersPermsissions(data:dict):
+
+    try:
+        try:
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = "python") 
+            cur=conn.cursor()
+        except mariadb.Error as e:       
+            print(f"Error connecting to MariaDB Platform: {e}")  
+            
+            return({"status":"Error",
+                    "message":{e}})
+            
+        usersPermissions =data['users']
+        usersToUpdate = data['changedUsers']
+        
+        for user in usersToUpdate:
+            user_data = next((u for u in usersPermissions if u['name'] == user), None)
+            if user_data:
+                updates = []
+                for perm in user_data['permissions']:
+                    column_name = perm['name']
+                    new_value = perm['access']
+                    updates.append(f"`{column_name}` = '{new_value}'")
+                
+                update_query = f"UPDATE Users SET {', '.join(updates)} WHERE username = '{user_data['name']}'"
+                print(update_query)
+                cur.execute(update_query)
+        
+        conn.commit()
+        return ({"status": "success"})
+
+
+    except Exception as e:       
+         
+            print(e)
+            return({"status":"Error",
+                    "message":{e}})
+        
+
+
 # @app.get("/inv")
 # async def fetch_inv():
     # pool = await asyncpg.create_pool(database="donate", user="root", password="root", host="3307")
