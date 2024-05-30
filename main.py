@@ -2899,13 +2899,15 @@ async def  AcccesManagement(compname:str):
         print(branches)
         column_names = [desc[0] for desc in cur.description]
         for i in range(8,len(column_names)):
-            columnNamesRes.append(column_names[i])
+            if not column_names[i].startswith("checkPrice"):
+                columnNamesRes.append(column_names[i])
         print(columnNamesRes)
         for userRes in cur:
             user = {
                 "name": userRes[1],
                 "permissions": [
-                    {column_names[i]: userRes[i] for i in range(8, len(column_names))}
+                    {column_names[i]: userRes[i] for i in range(8, len(column_names))  if  not column_names[i].startswith("checkPrice")            
+}
                 ]
             }
             # Flatten permissions dictionary and convert to the required format
