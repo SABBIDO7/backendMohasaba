@@ -2906,7 +2906,7 @@ async def  AcccesManagement(compname:str):
             user = {
                 "name": userRes[1],
                 "permissions": [
-                    {column_names[i]: userRes[i] for i in range(8, len(column_names))  if  not column_names[i].startswith("checkPrice")            
+                    {column_names[i]: userRes[i] for i in range(8, len(column_names))  if  not +column_names[i].startswith("checkPrice")            
 }
                 ]
             }
