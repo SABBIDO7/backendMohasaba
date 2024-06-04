@@ -192,6 +192,19 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
                         CheckInPage="Y"
                     else:
                         CheckInPage=users[28].upper()
+                    if users[29]=="" or users[29]==None:
+                        CompanySettings="Y"
+                    else:
+                        CompanySettings=users[29].upper()
+                    if users[30]=="" or users[30]==None:
+                        UserManagement="Y"
+                    else:
+                        UserManagement=users[30].upper()
+                    if users[31]=="" or users[31]==None:
+                        CompanyDashboard="Y"
+                    else:
+                        CompanyDashboard=users[31].upper()
+                    print(CompanyDashboard)
 
                     return{
                         "Info":"authorized",
@@ -220,10 +233,10 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
                             "AccountingPage":AccountingPage,
                             "InventoryPage":InventoryPage,
                             "TransactionsPage":TransactionsPage,
-                            "CheckInPage":CheckInPage
-
-
-
+                            "CheckInPage":CheckInPage,
+                            "CompanySettings":CompanySettings,
+                            "UserManagement":UserManagement,
+                            "CompanyDashboard":CompanyDashboard
                         }
                     }
 
