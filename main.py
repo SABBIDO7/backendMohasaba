@@ -2825,7 +2825,10 @@ async def  CheckInDashboard(data:dict):
         conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
         #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
         cur = conn.cursor()
-        query = f"SELECT User1,RefNo,AccName,DateI,TimeI,`long`,lat,Note,AccNo  FROM invnum WHERE RefType='CHK_AP' "
+        if data['type']=="All":
+            query = f"SELECT User1,RefNo,AccName,DateI,TimeI,`long`,lat,Note,AccNo  FROM invnum WHERE RefType IS NOT NULL "
+        else:
+            query = f"SELECT User1,RefNo,AccName,DateI,TimeI,`long`,lat,Note,AccNo  FROM invnum WHERE RefType='{data['type']}' "
         if data["search"]!='':
             query=query + f""" AND (User1 LIKE '%{data["search"]}' OR User1 LIKE '{data["search"]}%' OR User1 LIKE '%{data["search"]}%' OR AccName LIKE '%{data["search"]}' OR AccName LIKE '{data["search"]}%' OR AccName LIKE '%{data["search"]}%' OR Note LIKE '%{data["search"]}' OR Note LIKE '{data["search"]}%' OR Note LIKE '%{data["search"]}%' OR RefNo LIKE '{data["search"]}%' OR RefNo LIKE '%{data["search"]}' OR RefNo LIKE '%{data["search"]}%' OR AccNo LIKE '{data["search"]}%' OR AccNo LIKE '%{data["search"]}' OR AccNo LIKE '%{data["search"]}%') """
         if data['fromDate']!=None:
