@@ -273,7 +273,7 @@ async def getAccounts(data:dict):
             #print("lkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk")
             baseQuary = baseQuary +" LEFT JOIN(SELECT SUM(DB - CR) AS Balance,AccNo FROM listdaily GROUP BY AccNo) ld ON lh.AccNo= ld.AccNo WHERE lh.accno not like '%ALLDATA%' "
             if data["value"] != "":
-                cur.execute(baseQuary+f" and lh.accNo='{data['value']}' limit 1000;")
+                cur.execute(baseQuary+f" and lh.accNo='{data['value']}' limit 200;")
                 A=0
             
                 for row in cur:
@@ -296,6 +296,7 @@ async def getAccounts(data:dict):
                     }
                 # Append the dictionary to the results list
                     items_json.append(account_dict)
+                    print(items_json)
                     flagA=1
                 #print("rrrtttttt")
                 #print(A)
@@ -333,9 +334,9 @@ async def getAccounts(data:dict):
                 
             elif data["value"] != "":
                 if data["groupName"]!="":
-                    baseQuary1=baseQuary +f" WHERE go.itemno not like '%ALLDATA%' and go.itemno='{data['value']}' AND {data['groupType']} = '{data['groupName']}' GROUP BY go.itemno limit 1000;" 
+                    baseQuary1=baseQuary +f" WHERE go.itemno not like '%ALLDATA%' and go.itemno='{data['value']}' AND {data['groupType']} = '{data['groupName']}' GROUP BY go.itemno limit 200;" 
                 else:
-                    baseQuary1=baseQuary + f" WHERE go.itemno not like '%ALLDATA%' and go.itemno='{data['value']}' GROUP BY go.itemno limit 1000;"
+                    baseQuary1=baseQuary + f" WHERE go.itemno not like '%ALLDATA%' and go.itemno='{data['value']}' GROUP BY go.itemno limit 200;"
                 print(baseQuary1)
                 cur.execute(baseQuary1)
                 
@@ -399,7 +400,7 @@ async def getAccounts(data:dict):
         print(flagA)
         print(flagI)
         if flagI == 0 and flagA==0:
-            baseQuary = baseQuary + " limit 1000 "
+            baseQuary = baseQuary + " limit 200 "
             print(baseQuary)
             cur.execute(baseQuary)
 
@@ -2214,9 +2215,9 @@ async def newInvoice(data:dict):
             cur.execute(f"DELETE FROM goodstrans WHERE RefNo='{data['accRefNo']}' AND RefType='{data['type']}' ")
             conn.commit()
         
-            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`,`RefNo`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`,`long`,`lat`,`Note`) VALUES ('{data["username"]}', '{data["type"]}','{data["accRefNo"]}', '{data["accno"]}', '{data["accname"]}', '{Branch}', '{TBranch}', '{data["accDate"]}', '{data["accTime"]}', '','','','{data["Cur"]}','{data["Rate"]}','{data["long"]}','{data["lat"]}',''); """
+            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`,`RefNo`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`,`long`,`lat`,`Note`,`DateValue`) VALUES ('{data["username"]}', '{data["type"]}','{data["accRefNo"]}', '{data["accno"]}', '{data["accname"]}', '{Branch}', '{TBranch}', '{data["accDate"]}', '{data["accTime"]}', '','','','{data["Cur"]}','{data["Rate"]}','{data["long"]}','{data["lat"]}','','Date'); """
         else:
-            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`,`long`,`lat`,`Note`) VALUES ('{data["username"]}', '{data["type"]}', '{data["accno"]}', '{data["accname"]}', '{Branch}', '{TBranch}', '{data["accDate"]}', '{data["accTime"]}', '','','','{data["Cur"]}','{data["Rate"]}','{data["long"]}','{data["lat"]}',''); """
+            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`,`long`,`lat`,`Note`,`DateValue`) VALUES ('{data["username"]}', '{data["type"]}', '{data["accno"]}', '{data["accname"]}', '{Branch}', '{TBranch}', '{data["accDate"]}', '{data["accTime"]}', '','','','{data["Cur"]}','{data["Rate"]}','{data["long"]}','{data["lat"]}','','Date'); """
 
         
         cur.execute(basequery)
@@ -2311,7 +2312,7 @@ async def getInvoiceHistory(username:str,user:str):
         return({"Info":"unauthorized",
                 "msg":{e}})
     cur = conn.cursor()
-    baseQuery = f"""SELECT * FROM invnum WHERE (UserP='' or UserP='{user}') AND User1='{user}' AND RefType!='CHK_AP' """
+    baseQuery = f"""SELECT * FROM invnum WHERE (UserP='' or UserP='{user}') AND DateP='' AND TimeP='' AND User1='{user}' AND RefType!='CHK_AP' """
     cur.execute(baseQuery)
     invoices = []
     for invoice in cur:
@@ -2323,6 +2324,7 @@ async def getInvoiceHistory(username:str,user:str):
               'AccName':invoice[4],
               'Branch': invoice[5],
               'DateI': invoice[7],
+              'DateValue':invoice[17]
             }
         invoices.append(inv)
     #print(invoices)
@@ -2425,8 +2427,9 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
                 "TotalPieces":invoice[21],
                 "SPUnit": invoice[22],
                 "BPUnit":invoice[23],
-                "InitialPrice":invoice[41],
-                "TotalStockQty":invoice[46]
+                "DateValue":invoice[41],
+                "InitialPrice":invoice[42],
+                "TotalStockQty":invoice[47]
                
             }
         invoices.append(inv)
@@ -2446,10 +2449,10 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
                 "long": invoice[38],
                 "lat" :invoice[39],
                 "Note": invoice[40],
-                "balance":invoice[42],
-                "address":invoice[43],
-                "cur":invoice[44],
-                "mobile":invoice[45]
+                "balance":invoice[43],
+                "address":invoice[44],
+                "cur":invoice[45],
+                "mobile":invoice[46]
                 # "DateP": invoice[26],
                 # "TimeP": invoice[27],
                 # "UserP": invoice[28]
@@ -2781,7 +2784,7 @@ async def CheckIn(data:dict):
                     "message":"Wrong Barcode Format Data"})
         else:
             accname=data["Note"]
-        basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`,`long`,`lat`,`Note`) VALUES ('{data["username"]}', '{data["type"]}','{data["accno"]}', '{accname}', '', '', '{data["accDate"]}', '{data["accTime"]}', '','','','',0,'{data["long"]}','{data["lat"]}','{data["Note"]}'); """
+        basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`,`long`,`lat`,`Note`,`DateValue`) VALUES ('{data["username"]}', '{data["type"]}','{data["accno"]}', '{accname}', '', '', '{data["accDate"]}', '{data["accTime"]}', '','','','',0,'{data["long"]}','{data["lat"]}','{data["Note"]}','Date'); """
         print(basequery)
         cur.execute(basequery)
         conn.commit()
@@ -2826,9 +2829,9 @@ async def  CheckInDashboard(data:dict):
         #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
         cur = conn.cursor()
         if data['type']=="All":
-            query = f"SELECT User1,RefNo,AccName,DateI,TimeI,`long`,lat,Note,AccNo  FROM invnum WHERE RefType IS NOT NULL "
+            query = f"SELECT User1,RefNo,AccName,DateI,TimeI,`long`,lat,Note,AccNo,DateValue  FROM invnum WHERE RefType IS NOT NULL "
         else:
-            query = f"SELECT User1,RefNo,AccName,DateI,TimeI,`long`,lat,Note,AccNo  FROM invnum WHERE RefType='{data['type']}' "
+            query = f"SELECT User1,RefNo,AccName,DateI,TimeI,`long`,lat,Note,AccNo,DateValue  FROM invnum WHERE RefType='{data['type']}' "
         if data["search"]!='':
             query=query + f""" AND (User1 LIKE '%{data["search"]}' OR User1 LIKE '{data["search"]}%' OR User1 LIKE '%{data["search"]}%' OR AccName LIKE '%{data["search"]}' OR AccName LIKE '{data["search"]}%' OR AccName LIKE '%{data["search"]}%' OR Note LIKE '%{data["search"]}' OR Note LIKE '{data["search"]}%' OR Note LIKE '%{data["search"]}%' OR RefNo LIKE '{data["search"]}%' OR RefNo LIKE '%{data["search"]}' OR RefNo LIKE '%{data["search"]}%' OR AccNo LIKE '{data["search"]}%' OR AccNo LIKE '%{data["search"]}' OR AccNo LIKE '%{data["search"]}%') """
         if data['fromDate']!=None:
