@@ -292,7 +292,8 @@ async def getAccounts(data:dict):
                     "Mobile": row[11],
                     "AccName2": row[12],
                     "Fax": row[13],
-                    "Balance": row[14]
+                    "DeliveryDays": row[14],
+                    "Balance": row[15]
                     }
                 # Append the dictionary to the results list
                     items_json.append(account_dict)
@@ -477,7 +478,8 @@ async def getAccounts(data:dict):
                     "Mobile": row[11],
                     "AccName2": row[12],
                     "Fax": row[13],
-                    "Balance": row[14]
+                    "DeliveryDays": row[14],
+                    "Balance": row[15]
                 }
                 # Append the dictionary to the results list
                 items_json.append(account_dict)
@@ -546,7 +548,8 @@ WHERE
             "AccNo":x[0],
             "AccName":x[1],
             "Cur":x[2],
-            "Balance":x[14],
+            "DeliveryDays":x[14],
+            "Balance":x[15],
             "set":x[3],
             "category":x[4],
             "Price":x[5],
@@ -698,7 +701,7 @@ WHERE
         elif mydata["sAny"] == "Contains":
             baseQuary = baseQuary + str(f" AND ( {AccNo} like \'%{mydata['vAny']}%\' OR  {AccNo} like \'{mydata['vAny']}%\' OR  {AccNo} like \'%{mydata['vAny']}\' OR {AccName} like \'%{mydata['vAny']}%\'  OR {AccName} like \'{mydata['vAny']}%\'  OR {AccName} like \'%{mydata['vAny']}\' OR {Contact} like \'%{mydata['vAny']}%\'  OR {Contact} like \'{mydata['vAny']}%\'  OR {Contact} like \'%{mydata['vAny']}\' OR {Address}  like \'%{mydata['vAny']}%\'  OR {Address}  like \'{mydata['vAny']}%\'  OR {Address}  like \'%{mydata['vAny']}\' OR {tel} like \'%{mydata['vAny']}%\'  OR {tel} like \'{mydata['vAny']}%\'  OR {tel} like \'%{mydata['vAny']}\' OR {AccName2} like \'%{mydata['vAny']}%\'  OR {AccName2} like \'{mydata['vAny']}%\'  OR {AccName2} like \'%{mydata['vAny']}\' OR {Fax} like \'%{mydata['vAny']}%\' OR {Fax} like \'{mydata['vAny']}%\' OR {Fax} like \'%{mydata['vAny']}\' )  ")
     flag=0
-  
+    
     for f in filters:
         
         if mydata["branch"]:
@@ -785,6 +788,7 @@ WHERE
     r = list(cur)
     hisab = []
     ind = 0
+    print(baseQuary)
     if(mydata["branch"]):
         for x in r:
 
@@ -804,6 +808,7 @@ WHERE
                     "Mobile":x[15],
                     "AccName2":x[16],
                     "Fax":x[17],
+                    "DeliveryDays":x[18],
                     "Branch":x[1],
                     "DB":x[2],
                     "CR":x[3],
@@ -818,7 +823,8 @@ WHERE
                     "AccNo":x[0],
                     "AccName":x[1],
                     "Cur":x[2],
-                    "Balance":x[14],
+                    "DeliveryDays":x[14],
+                    "Balance":x[15],
                     "set":x[3],
                     "category":x[4],
                     "Price":x[5],
@@ -2187,6 +2193,7 @@ async def newInvoice(data:dict):
             Branch=data["Abranch"]
             TBranch=''
         print(data["accRefNo"],"tata33")
+        print(data)
         if data["accRefNo"]:
             print('adimmmmm')
             cur.execute(f"SELECT UserP FROM invnum WHERE RefNo={data['accRefNo']}")
@@ -2215,9 +2222,9 @@ async def newInvoice(data:dict):
             cur.execute(f"DELETE FROM goodstrans WHERE RefNo='{data['accRefNo']}' AND RefType='{data['type']}' ")
             conn.commit()
         
-            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`,`RefNo`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`,`long`,`lat`,`Note`,`DateValue`) VALUES ('{data["username"]}', '{data["type"]}','{data["accRefNo"]}', '{data["accno"]}', '{data["accname"]}', '{Branch}', '{TBranch}', '{data["accDate"]}', '{data["accTime"]}', '','','','{data["Cur"]}','{data["Rate"]}','{data["long"]}','{data["lat"]}','','Date'); """
+            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`,`RefNo`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`,`long`,`lat`,`Note`,`DateValue`) VALUES ('{data["username"]}', '{data["type"]}','{data["accRefNo"]}', '{data["accno"]}', '{data["accname"]}', '{Branch}', '{TBranch}', '{data["accDate"]}', '{data["accTime"]}', '','','','{data["Cur"]}','{data["Rate"]}','{data["long"]}','{data["lat"]}','','{data["deliveryDays"]}'); """
         else:
-            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`,`long`,`lat`,`Note`,`DateValue`) VALUES ('{data["username"]}', '{data["type"]}', '{data["accno"]}', '{data["accname"]}', '{Branch}', '{TBranch}', '{data["accDate"]}', '{data["accTime"]}', '','','','{data["Cur"]}','{data["Rate"]}','{data["long"]}','{data["lat"]}','','Date'); """
+            basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`,`long`,`lat`,`Note`,`DateValue`) VALUES ('{data["username"]}', '{data["type"]}', '{data["accno"]}', '{data["accname"]}', '{Branch}', '{TBranch}', '{data["accDate"]}', '{data["accTime"]}', '','','','{data["Cur"]}','{data["Rate"]}','{data["long"]}','{data["lat"]}','','{data["deliveryDays"]}'); """
 
         
         cur.execute(basequery)
@@ -2427,7 +2434,6 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
                 "TotalPieces":invoice[21],
                 "SPUnit": invoice[22],
                 "BPUnit":invoice[23],
-                "DateValue":invoice[41],
                 "InitialPrice":invoice[42],
                 "TotalStockQty":invoice[47]
                
@@ -2449,17 +2455,19 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
                 "long": invoice[38],
                 "lat" :invoice[39],
                 "Note": invoice[40],
+                "DateValue":invoice[41],
+
                 "balance":invoice[43],
                 "address":invoice[44],
                 "cur":invoice[45],
                 "mobile":invoice[46]
                 # "DateP": invoice[26],
-                # "TimeP": invoice[27],
+                # "TimeP": invoice[27],         
                 # "UserP": invoice[28]
                 }
             InvProfile.append(accInv)
         flag = flag+1   
-    #print(invoices)
+    print(InvProfile)
         
     invoices = sorted(invoices, key=lambda x: x["lno"])
     
@@ -2754,7 +2762,7 @@ async def CheckIn(data:dict):
                 except KeyError:
                     return({"Info":"Failed",
                     "message":"Wrong Barcode Format Data"})
-                basequery1=f"SELECT AccNo,AccName FROM listhisab WHERE AccNo='{data["accno"]}'"
+                basequery1=f"SELECT AccNo,AccName FROM listhisab WHERE AccNo='{data['accno']}'"
                 print(basequery1)
                 cur.execute(basequery1)
                 # for row in cur:
@@ -2784,7 +2792,7 @@ async def CheckIn(data:dict):
                     "message":"Wrong Barcode Format Data"})
         else:
             accname=data["Note"]
-        basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`,`long`,`lat`,`Note`,`DateValue`) VALUES ('{data["username"]}', '{data["type"]}','{data["accno"]}', '{accname}', '', '', '{data["accDate"]}', '{data["accTime"]}', '','','','',0,'{data["long"]}','{data["lat"]}','{data["Note"]}','Date'); """
+        basequery = f"""INSERT INTO `invnum` (`User1`, `RefType`, `AccNo`,`AccName`, `Branch`, `TBranch`, `DateI`, `TimeI`, `DateP`, `TimeP`, `UserP`,`Cur`,`Rate`,`long`,`lat`,`Note`,`DateValue`) VALUES ('{data["username"]}', '{data["type"]}','{data["accno"]}', '{accname}', '', '', '{data["accDate"]}', '{data["accTime"]}', '','','','',0,'{data["long"]}','{data["lat"]}','{data["Note"]}',''); """
         print(basequery)
         cur.execute(basequery)
         conn.commit()
