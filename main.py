@@ -2455,7 +2455,7 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
                 "long": invoice[38],
                 "lat" :invoice[39],
                 "Note": invoice[40],
-                "DateValue":invoice[41],
+                "deliveryDays":invoice[41],
 
                 "balance":invoice[43],
                 "address":invoice[44],
