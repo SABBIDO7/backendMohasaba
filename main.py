@@ -2995,6 +2995,30 @@ async def updateUsersPermsissions(data:dict):
                     "message":{e}})
         
 
+@app.get("/moh/getCompanySettings/{compname}/")
+async def getCompanySettings(compname:str):
+    try:
+        username = compname
+        headerResult={}
+        conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+        cur = conn.cursor()
+        query = f"SELECT GroupType,PrintFormat,CompanyCode,holidays FROM header LIMIT 1"
+        cur.execute(query)
+        for result in cur:
+            headerResult = {
+                "GroupType":result[0],
+                "PrintFormat": result[1],
+                "CompanyCode":result[2],
+                "Holidays":result[3]
+                
+            }
+        print(headerResult)
+       
+        return {"status":"success","result":headerResult}
+    except Exception as e:       
+        print(f"Error : {e}")  
+        return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"Info": "Failed", "message": str(e)})
 
 # @app.get("/inv")
 # async def fetch_inv():
