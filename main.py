@@ -3010,7 +3010,7 @@ async def getCompanySettings(compname:str):
                 "GroupType":result[0],
                 "PrintFormat": result[1],
                 "CompanyCode":result[2],
-                "Holidays":result[3]
+                "Holidays" : result[3] if result[3] not in [None, "", "null"] else []
                 
             }
         print(headerResult)
@@ -3019,6 +3019,42 @@ async def getCompanySettings(compname:str):
     except Exception as e:       
         print(f"Error : {e}")  
         return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"Info": "Failed", "message": str(e)})
+
+
+@app.post("/moh/UpdateCompanySettings/")
+async def updateUsersPermsissions(data:dict):
+
+    try:
+        try:
+            print("0-=")
+            username =data['compname']
+            conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+            cur=conn.cursor()
+        except mariadb.Error as e:       
+            print(f"Error connecting to MariaDB Platform: {e}")  
+            
+            return({"status":"Error",
+                    "message":{e}})
+
+        if data['groupType']!=None:
+
+            update_query = f"""UPDATE header SET GroupType='{data['groupType']}',PrintFormat='{data['printFormat']}',CompanyCode='{data['companyCode']}',Holidays='{data['holidays']}'  LIMIT 1
+"""     
+        else:
+            update_query = f"""UPDATE header SET PrintFormat='{data['printFormat']}',CompanyCode='{data['companyCode']}',Holidays='{data['holidays']}'  LIMIT 1
+"""
+        print(update_query)
+        cur.execute(update_query)
+        
+        conn.commit()
+        return ({"status": "success"})
+
+
+    except Exception as e:       
+         
+            print(e)
+            return({"status":"Error",
+                    "message":{e}})
 
 # @app.get("/inv")
 # async def fetch_inv():
