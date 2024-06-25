@@ -3056,6 +3056,127 @@ async def updateUsersPermsissions(data:dict):
             return({"status":"Error",
                     "message":{e}})
 
+
+@app.get("/moh/getPieChartData/{compname}/")
+async def getPieChartData(compname:str):
+    try:
+        username = compname
+        ResultCur1=[]
+        ResultCur2=[]
+        Curencies=[]
+        res=[]
+        index = 0  # Initialize index counter
+
+        conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+        cur = conn.cursor()
+        queryCur= "SELECT Distinct Color FROM goods;"
+        cur.execute(queryCur)
+        for resCur in cur:
+
+            if resCur[0]!='':
+                Curencies.append(resCur[0])
+        query = f"""SELECT gt.RefType,SUM(Total),g.Color AS Currency FROM goodstrans gt
+                 JOIN goods g ON gt.ItemNo = g.ItemNo
+                WHERE gt.RefType IN ('PI_AP', 'PR_AP', 'SA_AP', 'SR_AP', 'OD_AP')
+                  GROUP BY gt.RefType,g.Color """
+        cur.execute(query)
+        for result in cur:
+            color=""
+            if result[0]=="SR_AP":
+                color="red"
+            elif result[0]=="PR_AP":
+                color="orange"
+            elif result[0]=="SA_AP":
+                color="blue"
+            elif result[0]=="PI_AP":
+                color="yellow"
+            elif result[0]=="OD_AP":
+                color="green"
+            if result[2]==Curencies[0]:
+                resCur1 = {
+                    "id":index,
+                    "value":result[1],
+                    "label": f"series {result[0]}",
+                "Cur":result[2],
+                "color":color
+                }
+                ResultCur1.append(resCur1)
+            else:
+                resCur2 = {
+                    "id":index,
+                "value":result[1],
+                    "label": f"series {result[0]}",
+                "Cur":result[2],
+                                "color":color
+
+                }
+                ResultCur2.append(resCur2)
+            index += 1  # Increment index for each result item
+
+        
+        res.append(ResultCur1)
+        res.append(ResultCur2)
+        return {"status":"success","result":res}
+    except Exception as e:       
+        print(f"Error : {e}")  
+        return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"Info": "Failed", "message": str(e)})
+@app.get("/moh/getBarChartData/{compname}/")
+async def getBarChartData(compname:str):
+    try:
+        username = compname
+  
+       
+        index = 0  # Initialize index counter
+
+        conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+        cur = conn.cursor()
+
+        query = f"""SELECT 
+    gt.RefType, 
+    MONTH(gt.TDate) as Month, 
+    g.Color, 
+    SUM(gt.Total) as Total
+FROM 
+    goodstrans gt
+JOIN 
+    goods g ON gt.ItemNo = g.ItemNo
+WHERE 
+    gt.RefType IN ('PI_AP', 'PR_AP', 'SA_AP', 'SR_AP') AND gt.TDate IS NOT NULL AND gt.TDate!=''
+GROUP BY 
+    gt.RefType, MONTH(gt.TDate); """
+        cur.execute(query)
+        for result in cur:
+            color=""
+            if result[0]=="SR_AP":
+                color="red"
+            elif result[0]=="PR_AP":
+                color="orange"
+            elif result[0]=="SA_AP":
+                color="blue"
+            elif result[0]=="PI_AP":
+                color="yellow"
+            elif result[0]=="OD_AP":
+                color="green"
+            
+                res = {
+                    "id":index,
+                    "value":result[1],
+                    "label": f"series {result[0]}",
+                "Cur":result[2],
+                "color":color
+                }
+                result.append(res)
+  
+
+            index += 1  # Increment index for each result item
+
+
+        return {"status":"success","result":result}
+    except Exception as e:       
+        print(f"Error : {e}")  
+        return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"Info": "Failed", "message": str(e)})
 # @app.get("/inv")
 # async def fetch_inv():
     # pool = await asyncpg.create_pool(database="donate", user="root", password="root", host="3307")
