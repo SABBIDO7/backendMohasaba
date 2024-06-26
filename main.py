@@ -7,6 +7,7 @@ import uuid
 from datetime import datetime
 
 
+
 from dataclasses import Field
 from pydantic import BaseModel,Field
 from typing import List,Annotated
@@ -29,7 +30,7 @@ from fastapi.responses import JSONResponse
 import time
 
 import json
-
+import calendar
 # import SqlQueries as sql
 
 app = FastAPI()
@@ -3079,7 +3080,7 @@ async def getPieChartData(compname:str):
         query = f"""SELECT gt.RefType,SUM(Total),g.Color AS Currency FROM goodstrans gt
                  JOIN goods g ON gt.ItemNo = g.ItemNo
                 WHERE gt.RefType IN ('PI_AP', 'PR_AP', 'SA_AP', 'SR_AP', 'OD_AP')
-                  GROUP BY gt.RefType,g.Color """
+                  GROUP BY gt.RefType """
         cur.execute(query)
         for result in cur:
             color=""
@@ -3117,7 +3118,8 @@ async def getPieChartData(compname:str):
         
         res.append(ResultCur1)
         res.append(ResultCur2)
-        return {"status":"success","result":res}
+        print(res[0])
+        return {"status":"success","result":res[0]}
     except Exception as e:       
         print(f"Error : {e}")  
         return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"Info": "Failed", "message": str(e)})
@@ -3145,38 +3147,23 @@ JOIN
 WHERE 
     gt.RefType IN ('PI_AP', 'PR_AP', 'SA_AP', 'SR_AP') AND gt.TDate IS NOT NULL AND gt.TDate!=''
 GROUP BY 
-    gt.RefType, MONTH(gt.TDate); """
+    gt.RefType, MONTH(gt.TDate) ORDER BY MONTH(gt.TDate); """
         cur.execute(query)
-        for result in cur:
-            color=""
-            if result[0]=="SR_AP":
-                color="red"
-            elif result[0]=="PR_AP":
-                color="orange"
-            elif result[0]=="SA_AP":
-                color="blue"
-            elif result[0]=="PI_AP":
-                color="yellow"
-            elif result[0]=="OD_AP":
-                color="green"
-            
-                res = {
-                    "id":index,
-                    "value":result[1],
-                    "label": f"series {result[0]}",
-                "Cur":result[2],
-                "color":color
-                }
-                result.append(res)
-  
+        results= cur.fetchall()
+        data = {}
+        for ref_type,month,cur,  total in results:
+            print(month)
+            month_name = calendar.month_name[month][:3]  # Get month name abbreviation
+            if month_name not in data:
+                data[month_name] = {"month": month_name} 
+            data[month_name][ref_type] = round(total,2)
 
-            index += 1  # Increment index for each result item
+        dataset = list(data.values())
 
-
-        return {"status":"success","result":result}
-    except Exception as e:       
-        print(f"Error : {e}")  
-        return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"Info": "Failed", "message": str(e)})
+        return {"status": "success", "result": dataset}
+    except Exception as e:
+        print(f"Error : {e}")
+        return JSONResponse(status_code=HTTPException(status_code=401, detail=str(e)))
 # @app.get("/inv")
 # async def fetch_inv():
     # pool = await asyncpg.create_pool(database="donate", user="root", password="root", host="3307")
