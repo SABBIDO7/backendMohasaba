@@ -3164,6 +3164,37 @@ GROUP BY
     except Exception as e:
         print(f"Error : {e}")
         return JSONResponse(status_code=HTTPException(status_code=401, detail=str(e)))
+
+@app.get("/moh/getProfitData/{compname}/{year}")
+async def getProfitData(compname:str,year:str):
+    try:
+        username = compname
+  
+       
+
+        conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+        cur = conn.cursor()
+
+        query = f"""SELECT 
+    ROUND(SUM(CASE 
+        WHEN RefType IN ('SA_AP', 'PR_AP') THEN Total 
+        WHEN RefType IN ('PI_AP', 'SR_AP') THEN -Total 
+        ELSE 0 
+    END) ,0)AS Profit
+FROM 
+    goodstrans
+WHERE 
+    RefType IN ('SA_AP', 'SR_AP', 'PI_AP', 'PR_AP')
+    AND YEAR(TDate) = {year};
+ """
+        cur.execute(query)
+        result= cur.fetchone()
+
+        return {"status": "success", "result": result[0]}
+    except Exception as e:
+        print(f"Error : {e}")
+        return JSONResponse(status_code=HTTPException(status_code=401, detail=str(e)))
 # @app.get("/inv")
 # async def fetch_inv():
     # pool = await asyncpg.create_pool(database="donate", user="root", password="root", host="3307")
