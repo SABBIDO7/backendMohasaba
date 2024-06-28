@@ -271,7 +271,6 @@ async def getAccounts(data:dict):
     try:
         if data["option"] == "Accounts":
             baseQuary ="SELECT lh.*,Balance from listhisab lh"
-            #print("lkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk")
             baseQuary = baseQuary +" LEFT JOIN(SELECT SUM(DB - CR) AS Balance,AccNo FROM listdaily GROUP BY AccNo) ld ON lh.AccNo= ld.AccNo WHERE lh.accno not like '%ALLDATA%' "
             if data["value"] != "":
                 cur.execute(baseQuary+f" and lh.accNo='{data['value']}' limit 200;")
@@ -3077,7 +3076,7 @@ async def getPieChartData(compname:str):
 
             if resCur[0]!='':
                 Curencies.append(resCur[0])
-        query = f"""SELECT gt.RefType,SUM(Total),g.Color AS Currency FROM goodstrans gt
+        query = f"""SELECT gt.RefType,SUM(Total),g.Color AS Currency,COUNT(gt.RefNo) AS InvoicesNb FROM goodstrans gt
                  JOIN goods g ON gt.ItemNo = g.ItemNo
                 WHERE gt.RefType IN ('PI_AP', 'PR_AP', 'SA_AP', 'SR_AP', 'OD_AP')
                   GROUP BY gt.RefType """
@@ -3100,7 +3099,9 @@ async def getPieChartData(compname:str):
                     "value":result[1],
                     "label": f"series {result[0]}",
                 "Cur":result[2],
-                "color":color
+                "color":color,
+                                "invoices":result[3]
+
                 }
                 ResultCur1.append(resCur1)
             else:
@@ -3109,7 +3110,8 @@ async def getPieChartData(compname:str):
                 "value":result[1],
                     "label": f"series {result[0]}",
                 "Cur":result[2],
-                                "color":color
+                                "color":color,
+                "invoices":result[3]
 
                 }
                 ResultCur2.append(resCur2)
@@ -3176,7 +3178,7 @@ async def getProfitData(compname:str,year:str):
         #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
         cur = conn.cursor()
 
-        query = f"""SELECT 
+        query = f"""SELECT
     ROUND(SUM(CASE 
         WHEN RefType IN ('SA_AP', 'PR_AP') THEN Total 
         WHEN RefType IN ('PI_AP', 'SR_AP') THEN -Total 
@@ -3192,6 +3194,46 @@ WHERE
         result= cur.fetchone()
 
         return {"status": "success", "result": result[0]}
+    except Exception as e:
+        print(f"Error : {e}")
+        return JSONResponse(status_code=HTTPException(status_code=401, detail=str(e)))
+
+@app.get("/moh/getLineChartDataProfit/{compname}/{year}")
+async def getLineChartDataProfit(compname:str,year:str):
+    try:
+        username = compname
+  
+       
+        data=[]
+        dataMonths=[]
+        conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+        cur = conn.cursor()
+
+        query = f"""SELECT MONTH(TDate),
+    ROUND(SUM(CASE 
+        WHEN RefType IN ('SA_AP', 'PR_AP') THEN Total 
+        WHEN RefType IN ('PI_AP', 'SR_AP') THEN -Total 
+        ELSE 0 
+    END) ,0)AS Profit
+FROM 
+    goodstrans
+WHERE 
+    RefType IN ('SA_AP', 'SR_AP', 'PI_AP', 'PR_AP')
+    AND YEAR(TDate) = '{year}'
+    GROUP BY MONTH(TDate); """
+        cur.execute(query)
+        results= cur.fetchall()
+ 
+        for month,profit in results:
+            data.append(profit)
+            month_name = calendar.month_name[month][:3]  # Get month name abbreviation
+            dataMonths.append(month_name)
+        result=[]
+        result.append(dataMonths)
+        result.append(data)
+        
+        return {"status": "success", "result": result}
     except Exception as e:
         print(f"Error : {e}")
         return JSONResponse(status_code=HTTPException(status_code=401, detail=str(e)))
