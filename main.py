@@ -3026,7 +3026,6 @@ async def updateUsersPermsissions(data:dict):
 
     try:
         try:
-            print("0-=")
             username =data['compname']
             conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
             cur=conn.cursor()
@@ -3043,7 +3042,6 @@ async def updateUsersPermsissions(data:dict):
         else:
             update_query = f"""UPDATE header SET PrintFormat='{data['printFormat']}',CompanyCode='{data['companyCode']}',Holidays='{data['holidays']}'  LIMIT 1
 """
-        print(update_query)
         cur.execute(update_query)
         
         conn.commit()
@@ -3120,7 +3118,6 @@ async def getPieChartData(compname:str):
         
         res.append(ResultCur1)
         res.append(ResultCur2)
-        print(res[0])
         return {"status":"success","result":res[0]}
     except Exception as e:       
         print(f"Error : {e}")  
@@ -3154,7 +3151,6 @@ GROUP BY
         results= cur.fetchall()
         data = {}
         for ref_type,month,cur,  total in results:
-            print(month)
             month_name = calendar.month_name[month][:3]  # Get month name abbreviation
             if month_name not in data:
                 data[month_name] = {"month": month_name} 
@@ -3232,6 +3228,67 @@ WHERE
         result=[]
         result.append(dataMonths)
         result.append(data)
+        
+        return {"status": "success", "result": result}
+    except Exception as e:
+        print(f"Error : {e}")
+        return JSONResponse(status_code=HTTPException(status_code=401, detail=str(e)))
+
+@app.get("/moh/getTopSellersByAmount/{compname}/{year}")
+async def getTopSellersByAmount(compname:str,year:str):
+    try:
+        username = compname
+  
+       
+        result=[]
+        dataMonths=[]
+        conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+        cur = conn.cursor()
+
+        query = f"""SELECT itemName, ROUND(SUM(Total),0) AS TotalAmount FROM goodstrans
+WHERE RefType IN ('SA_AP','OD_AP')
+AND YEAR(TDate) = {year}
+GROUP BY itemNo
+ORDER BY TotalAmount
+DESC LIMIT 5  """
+        cur.execute(query)
+        results= cur.fetchall()
+ 
+ 
+        for res in results:
+            result.append({"ItemName":res[0],"TotalAmount":res[1]})
+        
+        return {"status": "success", "result": result}
+    except Exception as e:
+        print(f"Error : {e}")
+        return JSONResponse(status_code=HTTPException(status_code=401, detail=str(e)))
+    
+
+@app.get("/moh/getTopSellersByQuantity/{compname}/{year}")
+async def getTopSellersByQuantity(compname:str,year:str):
+    try:
+        username = compname
+  
+       
+        result=[]
+        conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+        #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
+        cur = conn.cursor()
+
+        query = f"""SELECT itemName, ROUND(SUM(Qty),0) AS TotalQty FROM goodstrans
+WHERE RefType IN ('SA_AP','OD_AP')
+AND YEAR(TDate) = {year}
+GROUP BY itemNo
+ORDER BY TotalQty
+DESC LIMIT 5  """
+        cur.execute(query)
+        results= cur.fetchall()
+ 
+        for res in results:
+            print('ooo',res[0])
+            result.append({"ItemName":res[0],"TotalQty":res[1]})
+        print(result)
         
         return {"status": "success", "result": result}
     except Exception as e:
