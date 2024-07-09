@@ -275,7 +275,8 @@ async def getAccounts(data:dict):
             # baseQuary = baseQuary +" LEFT JOIN(SELECT SUM(DB - CR) AS Balance,AccNo FROM listdaily GROUP BY AccNo) ld ON lh.AccNo= ld.AccNo WHERE lh.accno not like '%ALLDATA%' "
             baseQuary = AccountSearchquery("(SELECT * FROM listhisab WHERE accno NOT LIKE '%ALLDATA%' ORDER BY AccNo LIMIT 150) lh")
             if data["value"] != "":
-                baseQuary=  AccountSearchquery(F""" (SELECT * FROM listhisab WHERE accno NOT LIKE '%ALLDATA%' AND  accno={data["value"]} ORDER BY AccNo LIMIT 150) lh """)
+                baseQuary=  AccountSearchquery(F""" (SELECT * FROM listhisab WHERE accno NOT LIKE '%ALLDATA%' AND  accno='{data["value"]}' ORDER BY AccNo LIMIT 150) lh """)
+                print(baseQuary)
                 cur.execute(baseQuary)
                 A=0
             
@@ -305,7 +306,7 @@ async def getAccounts(data:dict):
                 #print("rrrtttttt")
                 #print(A)
                 if flagA==0:
-                    baseQuary=  AccountSearchquery(f"""  and (accname LIKE '{data["value"]}%' or accname LIKE '%{data["value"]}' or accname LIKE '%{data["value"]}%' or lh.accno LIKE '{data["value"]}%' or tel LIKE '{data["value"]}%' or tel LIKE '%{data["value"]}' or tel LIKE '%{data["value"]}%' or lh.contact LIKE '{data["value"]}%' or lh.contact LIKE '%{data["value"]}' or lh.contact LIKE '%{data["value"]}%' )  or lh.address  LIKE '{data["value"]}%' or lh.address  LIKE '%{data["value"]}' or lh.address  LIKE '%{data["value"]}%' """)
+                    baseQuary=  AccountSearchquery(f""" (SELECT * FROM listhisab WHERE accno NOT LIKE '%ALLDATA%' AND  accno='{data["value"]}'   and (accname LIKE '{data["value"]}%' or accname LIKE '%{data["value"]}' or accname LIKE '%{data["value"]}%' or accno LIKE '{data["value"]}%' or tel LIKE '{data["value"]}%' or tel LIKE '%{data["value"]}' or tel LIKE '%{data["value"]}%' or contact LIKE '{data["value"]}%' or contact LIKE '%{data["value"]}' or contact LIKE '%{data["value"]}%' )  or address  LIKE '{data["value"]}%' or address  LIKE '%{data["value"]}' or address  LIKE '%{data["value"]}%' ORDER BY AccNo LIMIT 150) lh """)
 
             
         
@@ -493,7 +494,6 @@ async def getAccounts(data:dict):
 
         # Convert the list of dictionaries to JSON
         
-    
                 
         r = list(items_json)
         
