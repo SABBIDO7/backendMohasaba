@@ -246,6 +246,7 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
         }
 
 @app.post("/INVOICE_DATA_SELECT/")
+
 async def getAccounts(data:dict):
     username=data["username"]
     #print(data)
@@ -270,10 +271,12 @@ async def getAccounts(data:dict):
     ItemsByBranchQuery=""
     try:
         if data["option"] == "Accounts":
-            baseQuary ="SELECT lh.*,Balance from listhisab lh"
-            baseQuary = baseQuary +" LEFT JOIN(SELECT SUM(DB - CR) AS Balance,AccNo FROM listdaily GROUP BY AccNo) ld ON lh.AccNo= ld.AccNo WHERE lh.accno not like '%ALLDATA%' "
+            # baseQuary ="SELECT lh.*,Balance from listhisab lh"
+            # baseQuary = baseQuary +" LEFT JOIN(SELECT SUM(DB - CR) AS Balance,AccNo FROM listdaily GROUP BY AccNo) ld ON lh.AccNo= ld.AccNo WHERE lh.accno not like '%ALLDATA%' "
+            baseQuary = AccountSearchquery("(SELECT * FROM listhisab WHERE accno NOT LIKE '%ALLDATA%' ORDER BY AccNo LIMIT 150) lh")
             if data["value"] != "":
-                cur.execute(baseQuary+f" and lh.accNo='{data['value']}' limit 200;")
+                baseQuary=  AccountSearchquery(F""" (SELECT * FROM listhisab WHERE accno NOT LIKE '%ALLDATA%' AND  accno={data["value"]} ORDER BY AccNo LIMIT 150) lh """)
+                cur.execute(baseQuary)
                 A=0
             
                 for row in cur:
@@ -302,7 +305,8 @@ async def getAccounts(data:dict):
                 #print("rrrtttttt")
                 #print(A)
                 if flagA==0:
-                    baseQuary = baseQuary + f"""  and (accname LIKE '{data["value"]}%' or accname LIKE '%{data["value"]}' or accname LIKE '%{data["value"]}%' or lh.accno LIKE '{data["value"]}%' or tel LIKE '{data["value"]}%' or tel LIKE '%{data["value"]}' or tel LIKE '%{data["value"]}%' or lh.contact LIKE '{data["value"]}%' or lh.contact LIKE '%{data["value"]}' or lh.contact LIKE '%{data["value"]}%' )  or lh.address  LIKE '{data["value"]}%' or lh.address  LIKE '%{data["value"]}' or lh.address  LIKE '%{data["value"]}%'"""
+                    baseQuary=  AccountSearchquery(f"""  and (accname LIKE '{data["value"]}%' or accname LIKE '%{data["value"]}' or accname LIKE '%{data["value"]}%' or lh.accno LIKE '{data["value"]}%' or tel LIKE '{data["value"]}%' or tel LIKE '%{data["value"]}' or tel LIKE '%{data["value"]}%' or lh.contact LIKE '{data["value"]}%' or lh.contact LIKE '%{data["value"]}' or lh.contact LIKE '%{data["value"]}%' )  or lh.address  LIKE '{data["value"]}%' or lh.address  LIKE '%{data["value"]}' or lh.address  LIKE '%{data["value"]}%' """)
+
             
         
         if data["option"] == "Items":
@@ -401,7 +405,8 @@ async def getAccounts(data:dict):
         print(flagA)
         print(flagI)
         if flagI == 0 and flagA==0:
-            baseQuary = baseQuary + " limit 200 "
+            if flagI==0 and data["option"] == "Items":
+                baseQuary = baseQuary + " limit 200 "
             print(baseQuary)
             cur.execute(baseQuary)
 
@@ -501,7 +506,52 @@ async def getAccounts(data:dict):
             
             return{"Info":"error",
                     "msg":f"{e}"} 
-
+def AccountSearchquery(var:str):
+    baseQuary =f"""SELECT lh.*, ROUND(COALESCE(ld.Balance, 0),2) AS Balance FROM 
+ {var}
+    CROSS JOIN (
+    SELECT 
+        CASE 
+            WHEN mainCur = 1 THEN Cur1 
+            WHEN mainCur = 2 THEN Cur2 
+        END AS CompanyCurrency,  
+        Rate, 
+        mainCur 
+    FROM 
+        header
+    LIMIT 1
+) hd
+LEFT JOIN (
+    SELECT 
+        ld.AccNo, 
+        SUM(
+            CASE 
+                WHEN lh.Cur = hd.CompanyCurrency THEN ld.DB - ld.CR
+                WHEN hd.mainCur = '1' AND lh.Cur != hd.CompanyCurrency THEN (ld.DB - ld.CR) * hd.Rate
+                WHEN hd.mainCur = '2' AND lh.Cur != hd.CompanyCurrency THEN (ld.DB - ld.CR) / hd.Rate
+                ELSE 0
+            END
+        ) AS Balance 
+    FROM 
+        listdaily ld
+    JOIN {var} ON ld.AccNo = lh.AccNo 
+    CROSS JOIN (
+        SELECT 
+            CASE 
+                WHEN mainCur = 1 THEN Cur1 
+                WHEN mainCur = 2 THEN Cur2 
+            END AS CompanyCurrency,  
+            Rate, 
+            mainCur 
+        FROM 
+            header
+        LIMIT 1
+    ) hd
+    GROUP BY 
+        ld.AccNo
+) ld ON lh.AccNo = ld.AccNo;
+"""
+    return baseQuary
 @app.get("/moh/{uid}/Accounting/{limit}/",status_code=200)
 async def Accounting(uid:str,limit:int):
 
