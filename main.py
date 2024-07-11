@@ -306,7 +306,7 @@ async def getAccounts(data:dict):
                 #print("rrrtttttt")
                 #print(A)
                 if flagA==0:
-                    baseQuary=  AccountSearchquery(f""" (SELECT * FROM listhisab WHERE accno NOT LIKE '%ALLDATA%' AND  accno='{data["value"]}'   and (accname LIKE '{data["value"]}%' or accname LIKE '%{data["value"]}' or accname LIKE '%{data["value"]}%' or accno LIKE '{data["value"]}%' or tel LIKE '{data["value"]}%' or tel LIKE '%{data["value"]}' or tel LIKE '%{data["value"]}%' or contact LIKE '{data["value"]}%' or contact LIKE '%{data["value"]}' or contact LIKE '%{data["value"]}%' )  or address  LIKE '{data["value"]}%' or address  LIKE '%{data["value"]}' or address  LIKE '%{data["value"]}%' ORDER BY AccNo LIMIT 150) lh """)
+                    baseQuary=  AccountSearchquery(f""" (SELECT * FROM listhisab WHERE accno NOT LIKE '%ALLDATA%' AND  accno='{data["value"]}'   OR (accname LIKE '{data["value"]}%' or accname LIKE '%{data["value"]}' or accname LIKE '%{data["value"]}%' or accno LIKE '{data["value"]}%' or tel LIKE '{data["value"]}%' or tel LIKE '%{data["value"]}' or tel LIKE '%{data["value"]}%' or contact LIKE '{data["value"]}%' or contact LIKE '%{data["value"]}' or contact LIKE '%{data["value"]}%' )  or address  LIKE '{data["value"]}%' or address  LIKE '%{data["value"]}' or address  LIKE '%{data["value"]}%' ORDER BY AccNo LIMIT 150) lh """)
 
             
         
