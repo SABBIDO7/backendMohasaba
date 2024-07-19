@@ -526,7 +526,7 @@ LEFT JOIN (
         ld.AccNo, 
         SUM(
             CASE 
-                WHEN lh.Cur = hd.CompanyCurrency THEN ld.DB - ld.CR
+                WHEN lh.Cur = hd.CompanyCurrency OR ld.RefType NOT LIKE '%_AP' THEN ld.DB - ld.CR
                 WHEN hd.mainCur = '1' AND lh.Cur != hd.CompanyCurrency THEN (ld.DB - ld.CR) * hd.Rate
                 WHEN hd.mainCur = '2' AND lh.Cur != hd.CompanyCurrency THEN (ld.DB - ld.CR) / hd.Rate
                 ELSE 0
@@ -2402,6 +2402,7 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
     cur = conn.cursor()
     cur.execute(f"SELECT UserP FROM invnum WHERE RefNo={InvoiceId}")
     result = cur.fetchone()
+    globalBalance=0
     if result:
         userP=result[0]
         if (userP!='' and userP!=None) and userP!=user:
@@ -2443,6 +2444,52 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
             Columns += f"""SUM(CASE WHEN gt.Branch = '{branch}' THEN gt.AvQty ELSE 0 END) AS Br{branch},
             """
     #print(InvoiceId)
+    baseQueryBalance=f"""SELECT ROUND(COALESCE(ld.Balance, 0),2) AS Balance FROM
+  (SELECT * FROM listhisab WHERE accno='12051' ORDER BY AccNo LIMIT 150) lh 
+    CROSS JOIN (
+    SELECT
+        CASE
+            WHEN mainCur = 1 THEN Cur1
+            WHEN mainCur = 2 THEN Cur2
+        END AS CompanyCurrency,
+        Rate,
+        mainCur
+    FROM
+        header
+    LIMIT 1
+) hd
+LEFT JOIN (
+    SELECT
+        ld.AccNo,
+        SUM(
+            CASE
+                WHEN lh.Cur = hd.CompanyCurrency OR ld.RefType NOT LIKE '%_AP' THEN ld.DB - ld.CR
+                WHEN hd.mainCur = '1' AND lh.Cur != hd.CompanyCurrency THEN (ld.DB - ld.CR) * hd.Rate
+                WHEN hd.mainCur = '2' AND lh.Cur != hd.CompanyCurrency THEN (ld.DB - ld.CR) / hd.Rate
+                ELSE 0
+            END
+        ) AS Balance
+    FROM
+        listdaily ld
+    JOIN    (SELECT * FROM listhisab WHERE accno='12051' ORDER BY AccNo LIMIT 150) lh
+    CROSS JOIN (
+        SELECT
+            CASE
+                WHEN mainCur = 1 THEN Cur1
+                WHEN mainCur = 2 THEN Cur2
+            END AS CompanyCurrency,
+            Rate,
+            mainCur
+        FROM
+            header
+        LIMIT 1
+    ) hd
+    GROUP BY
+        ld.AccNo
+) ld ON lh.AccNo = ld.AccNo;"""
+    cur.execute(baseQueryBalance)
+    for balance in cur:
+        globalBalance=balance[0]
     baseQuery = f"""SELECT i.*,iv.*,g.{SalePrice},ld.Balance,lh.Address,lh.Cur,lh.Mobile,COALESCE(gts.Stock,0) FROM inv i 
     LEFT JOIN(SELECT * FROM invnum) iv ON i.RefNo = iv.RefNo
     LEFT JOIN (SELECT {SalePrice},ItemNo FROM goods) g ON i.ItemNo = g.ItemNo
@@ -2455,7 +2502,7 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
     invoices = []
     InvProfile=[]
     flag=0
-    for invoice in cur:
+    for invoice in cur: 
         # branchesStock = {}
         # brIndex = 1
         # for br in branches:
@@ -2507,7 +2554,7 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
                 "Note": invoice[40],
                 "deliveryDays":invoice[41],
 
-                "balance":invoice[43],
+                "balance":globalBalance, #invoice[43],
                 "address":invoice[44],
                 "cur":invoice[45],
                 "mobile":invoice[46]
