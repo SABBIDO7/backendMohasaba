@@ -572,23 +572,48 @@ async def Accounting(uid:str,limit:int):
     
 
 
-    cur.execute(f"""SELECT 
-    lh.*, 
-   COALESCE(ld.balance,0) AS balance
-FROM 
-    listhisab lh
-LEFT JOIN (
-    SELECT 
-        AccNo, 
-        SUM(DB - CR) AS balance
-    FROM 
-        listdaily
-    GROUP BY 
-        AccNo
-   
-) ld ON lh.AccNo = ld.AccNo
-WHERE 
-    lh.AccNo IS NOT NULL AND (ld.balance >= 0.01 OR ld.balance <= -0.01) limit {limit}""") #honn
+    cur.execute(f"""WITH 
+account_data AS (
+    SELECT * 
+    FROM listhisab 
+    ORDER BY AccNo 
+                LIMIT {limit}
+),
+header_data AS (
+    SELECT
+        CASE
+            WHEN mainCur = 1 THEN Cur1
+            WHEN mainCur = 2 THEN Cur2
+        END AS CompanyCurrency,
+        Rate,
+        mainCur
+    FROM header
+    LIMIT 1
+),
+balance_calc AS (
+    SELECT
+        ld.AccNo,
+        SUM(
+            CASE
+                WHEN lh.Cur = hd.CompanyCurrency OR ld.RefType NOT LIKE '%_AP' THEN ld.DB - ld.CR
+                WHEN hd.mainCur = '1' AND lh.Cur != hd.CompanyCurrency THEN (ld.DB - ld.CR) * hd.Rate
+                WHEN hd.mainCur = '2' AND lh.Cur != hd.CompanyCurrency THEN (ld.DB - ld.CR) / hd.Rate
+                ELSE 0
+            END
+        ) AS Balance
+    FROM listdaily ld
+    JOIN account_data lh ON lh.AccNo = ld.AccNo
+    CROSS JOIN header_data hd
+    GROUP BY ld.AccNo
+    HAVING Balance>0.01 OR Balance <-0.01
+)
+SELECT 
+    lh.*,
+    ROUND(COALESCE(ld.Balance, 0), 2) AS Balance
+FROM account_data lh
+CROSS JOIN header_data hd
+LEFT JOIN balance_calc ld ON lh.AccNo = ld.AccNo
+WHERE ld.Balance IS NOT NULL;""") #honn
     hisab = []
     ind = 0
     for x in cur:
@@ -2444,49 +2469,7 @@ async def getInvoiceDetails(username:str,user:str,InvoiceId:str,salePricePrefix:
             Columns += f"""SUM(CASE WHEN gt.Branch = '{branch}' THEN gt.AvQty ELSE 0 END) AS Br{branch},
             """
     #print(InvoiceId)
-    baseQueryBalance=f"""SELECT ROUND(COALESCE(ld.Balance, 0),2) AS Balance FROM
-  (SELECT * FROM listhisab WHERE accno='12051' ORDER BY AccNo LIMIT 150) lh 
-    CROSS JOIN (
-    SELECT
-        CASE
-            WHEN mainCur = 1 THEN Cur1
-            WHEN mainCur = 2 THEN Cur2
-        END AS CompanyCurrency,
-        Rate,
-        mainCur
-    FROM
-        header
-    LIMIT 1
-) hd
-LEFT JOIN (
-    SELECT
-        ld.AccNo,
-        SUM(
-            CASE
-                WHEN lh.Cur = hd.CompanyCurrency OR ld.RefType NOT LIKE '%_AP' THEN ld.DB - ld.CR
-                WHEN hd.mainCur = '1' AND lh.Cur != hd.CompanyCurrency THEN (ld.DB - ld.CR) * hd.Rate
-                WHEN hd.mainCur = '2' AND lh.Cur != hd.CompanyCurrency THEN (ld.DB - ld.CR) / hd.Rate
-                ELSE 0
-            END
-        ) AS Balance
-    FROM
-        listdaily ld
-    JOIN    (SELECT * FROM listhisab WHERE accno='12051' ORDER BY AccNo LIMIT 150) lh
-    CROSS JOIN (
-        SELECT
-            CASE
-                WHEN mainCur = 1 THEN Cur1
-                WHEN mainCur = 2 THEN Cur2
-            END AS CompanyCurrency,
-            Rate,
-            mainCur
-        FROM
-            header
-        LIMIT 1
-    ) hd
-    GROUP BY
-        ld.AccNo
-) ld ON lh.AccNo = ld.AccNo;"""
+    baseQueryBalance = calc_balance_invoiceDetails(InvoiceId)
     cur.execute(baseQueryBalance)
     for balance in cur:
         globalBalance=balance[0]
@@ -2574,7 +2557,54 @@ LEFT JOIN (
         "InvProfile":InvProfile,
         "message":""
         } 
-
+def calc_balance_invoiceDetails(RefNo:int):
+    calcBalance=f"""WITH inv AS (
+    SELECT AccNo 
+    FROM invnum 
+    WHERE RefNo = {RefNo}
+),
+header_data AS (
+    SELECT
+        CASE
+            WHEN mainCur = 1 THEN Cur1
+            WHEN mainCur = 2 THEN Cur2
+        END AS CompanyCurrency,
+        Rate,
+        mainCur
+    FROM header
+    LIMIT 1
+),
+account_data AS (
+    SELECT * 
+    FROM listhisab 
+    WHERE accno = (SELECT AccNo FROM inv)
+    ORDER BY AccNo 
+    LIMIT 150
+),
+balance_calc AS (
+    SELECT
+        ld.AccNo,
+        SUM(
+            CASE
+                WHEN lh.Cur = hd.CompanyCurrency OR ld.RefType NOT LIKE '%_AP' THEN ld.DB - ld.CR
+                WHEN hd.mainCur = '1' AND lh.Cur != hd.CompanyCurrency THEN (ld.DB - ld.CR) * hd.Rate
+                WHEN hd.mainCur = '2' AND lh.Cur != hd.CompanyCurrency THEN (ld.DB - ld.CR) / hd.Rate
+                ELSE 0
+            END
+        ) AS Balance
+    FROM listdaily ld
+    JOIN account_data lh ON lh.AccNo = ld.AccNo
+    CROSS JOIN header_data hd
+    GROUP BY ld.AccNo
+)
+SELECT 
+    ROUND(COALESCE(ld.Balance, 0), 2) AS Balance,
+    (SELECT AccNo FROM inv) AS inv
+FROM account_data lh
+CROSS JOIN header_data hd
+LEFT JOIN balance_calc ld ON lh.AccNo = ld.AccNo;"""
+    return calcBalance
+    
 # @app.post("/moh/RemoveItemFromInvoiceHistory/")
 # async def removeItemFromHistory(data:dict):
 
