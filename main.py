@@ -1399,8 +1399,8 @@ async def AccStatement(uid:str ,id:str):
                     "msg":{e}})
         
     cur = conn.cursor()
-   
-    cur.execute("SELECT AccNo, Dep, SUM(DB - CR) AS balance FROM listdaily WHERE AccNo = %s GROUP BY AccNo, Dep;", (id,))
+    cur.execute(accountStatament_calcBalance(id))
+    #cur.execute("SELECT AccNo, Dep, SUM(DB - CR) AS balance FROM listdaily WHERE AccNo = %s GROUP BY AccNo, Dep;", (id,))
     stat = []
     x= 0
     for vstat in cur:
@@ -1420,12 +1420,63 @@ async def AccStatement(uid:str ,id:str):
             
         })
         x= x +1
+    print(stat)
     return{
         "Info":"authorized",
         "Branch":stat,
         
         }
-
+def accountStatament_calcBalance(acc:str):
+    calcBalance=f"""WITH 
+header_data AS (
+    SELECT
+        CASE
+            WHEN mainCur = 1 THEN Cur1
+            WHEN mainCur = 2 THEN Cur2
+        END AS CompanyCurrency,
+        Rate,
+        mainCur
+    FROM header
+    LIMIT 1
+),
+cur AS (
+    SELECT DISTINCT AccNo, Cur
+    FROM listhisab 
+    WHERE AccNo = '{acc}'
+),
+account_data AS (
+    SELECT AccNo, Dep 
+    FROM listdaily 
+    WHERE AccNo = '{acc}'
+    GROUP BY AccNo, Dep
+),
+balance_calc AS (
+    SELECT
+        ld.AccNo,
+        ld.Dep,
+        SUM(
+            CASE
+                WHEN c.Cur = hd.CompanyCurrency OR ld.RefType NOT LIKE '%_AP' THEN ld.DB - ld.CR
+                WHEN hd.mainCur = '1' AND c.Cur != hd.CompanyCurrency THEN (ld.DB - ld.CR) * hd.Rate
+                WHEN hd.mainCur = '2' AND c.Cur != hd.CompanyCurrency THEN (ld.DB - ld.CR) / hd.Rate
+                ELSE 0
+            END
+        ) AS Balance
+    FROM listdaily ld
+    JOIN cur c ON c.AccNo = ld.AccNo
+    CROSS JOIN header_data hd
+    WHERE ld.AccNo = '{acc}'
+    GROUP BY ld.AccNo, ld.Dep
+)
+SELECT 
+    ad.AccNo,
+    ad.Dep,
+    ROUND(COALESCE(bc.Balance, 0), 2) AS Balance
+FROM account_data ad
+LEFT JOIN balance_calc bc ON ad.AccNo = bc.AccNo AND ad.Dep = bc.Dep
+CROSS JOIN header_data hd;"""
+    print(calcBalance)
+    return calcBalance
 @app.get("/moh/{uid}/Accounting/Double/{type}/{number}/",status_code=200)
 async def StockStatement(uid:str, type:str, number:str):
     username = uid
