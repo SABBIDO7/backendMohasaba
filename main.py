@@ -9,6 +9,7 @@ from datetime import datetime
 
 
 from dataclasses import Field
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel,Field
 from typing import List,Annotated
 import mysql.connector as mariadb
@@ -18,7 +19,7 @@ from fastapi import FastAPI, Form, status,HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 
 # from fastapi import FastAPI, WebSocket
@@ -507,7 +508,7 @@ async def getAccounts(data:dict):
             return{"Info":"error",
                     "msg":f"{e}"} 
 def AccountSearchquery(var:str):
-    baseQuary =f"""SELECT lh.*, ROUND(COALESCE(ld.Balance, 0),2) AS Balance FROM 
+    baseQuary =f"""SELECT lh.*, COALESCE(ld.Balance, 0) AS Balance FROM 
  {var}
     CROSS JOIN (
     SELECT 
@@ -609,7 +610,7 @@ balance_calc AS (
 )
 SELECT 
     lh.*,
-    ROUND(COALESCE(ld.Balance, 0), 2) AS Balance
+    COALESCE(ld.Balance, 0) AS Balance
 FROM account_data lh
 CROSS JOIN header_data hd
 LEFT JOIN balance_calc ld ON lh.AccNo = ld.AccNo
@@ -1471,7 +1472,7 @@ balance_calc AS (
 SELECT 
     ad.AccNo,
     ad.Dep,
-    ROUND(COALESCE(bc.Balance, 0), 2) AS Balance
+    COALESCE(bc.Balance, 0) AS Balance
 FROM account_data ad
 LEFT JOIN balance_calc bc ON ad.AccNo = bc.AccNo AND ad.Dep = bc.Dep
 CROSS JOIN header_data hd;"""
@@ -2649,7 +2650,7 @@ balance_calc AS (
     GROUP BY ld.AccNo
 )
 SELECT 
-    ROUND(COALESCE(ld.Balance, 0), 2) AS Balance,
+    COALESCE(ld.Balance, 0) AS Balance,
     (SELECT AccNo FROM inv) AS inv
 FROM account_data lh
 CROSS JOIN header_data hd
@@ -3505,3 +3506,5 @@ DESC LIMIT 5  """
 #     print("Received notification about operation:")
 #     # Handle the notification as needed
 #     return {"message": "Notification received"}
+app.mount("/locales", StaticFiles(directory="D:/PARADOXProjects/mohasaba2/public/locales"), name="locales")
+
