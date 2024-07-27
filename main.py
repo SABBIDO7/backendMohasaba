@@ -11,11 +11,11 @@ from datetime import datetime
 from dataclasses import Field
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel,Field
-from typing import List,Annotated
+from typing import Dict, List,Annotated
 import mysql.connector as mariadb
 
 import uvicorn
-from fastapi import FastAPI, Form, status,HTTPException
+from fastapi import FastAPI, Form, Query, status,HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
@@ -32,6 +32,10 @@ import time
 
 import json
 import calendar
+import pandas as pd
+import numpy as np
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
 # import SqlQueries as sql
 
 app = FastAPI()
@@ -206,7 +210,7 @@ async def login(compname:str = Form() ,username:str = Form(), password:str = For
                         CompanyDashboard="Y"
                     else:
                         CompanyDashboard=users[31].upper()
-                    print(CompanyDashboard)
+                    print(OrderForm)
 
                     return{
                         "Info":"authorized",
@@ -3079,7 +3083,7 @@ async def  AcccesManagement(compname:str):
         try:
             conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = "python") 
 
-            conn2 = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = compname) 
+            conn2 = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
             #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
         
         except mariadb.Error as e:       
@@ -3093,9 +3097,9 @@ async def  AcccesManagement(compname:str):
         query = f"SELECT * FROM users WHERE compcode='{username}'"
         print(query)
         cur.execute(query)
-        conn.close()
+        
         cur2.execute("SELECT DISTINCT `Branch` FROM `header` WHERE Branch is not null order by Branch asc;")   
-        conn2.close()
+        
         branches = []
         salePrices=['1','2','3','4','5']
 
@@ -3124,7 +3128,8 @@ async def  AcccesManagement(compname:str):
             result.append(user)
         
        
-
+        conn.close()
+        conn2.close()
         return ({"status": "success",
                  "users":result,"permissionsName":columnNamesRes,"branches":branches,"salePrices":salePrices})
 
@@ -3138,6 +3143,7 @@ async def  AcccesManagement(compname:str):
 async def updateUsersPermsissions(data:dict):
 
     try:
+        compname = data['compname'].upper()
         try:
             conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = "python") 
             cur=conn.cursor()
@@ -3159,7 +3165,7 @@ async def updateUsersPermsissions(data:dict):
                     new_value = perm['access']
                     updates.append(f"`{column_name}` = '{new_value}'")
                 
-                update_query = f"UPDATE Users SET {', '.join(updates)} WHERE username = '{user_data['name']}'"
+                update_query = f"UPDATE Users SET {', '.join(updates)} WHERE username = '{user_data['name']}' AND  compcode='{compname}'"
                 print(update_query)
                 cur.execute(update_query)
         
@@ -3247,12 +3253,12 @@ async def getPieChartData(compname:str):
         conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
         #conn = mariadb.connect(user="ots", password="", host="127.0.0.1",port=3306,database = username) 
         cur = conn.cursor()
-        queryCur= "SELECT Distinct Color FROM goods;"
-        cur.execute(queryCur)
-        for resCur in cur:
+        # queryCur= "SELECT Distinct Color FROM goods;"
+        # cur.execute(queryCur)
+        # for resCur in cur:
 
-            if resCur[0]!='':
-                Curencies.append(resCur[0])
+        #     if resCur[0]!='':
+        #         Curencies.append(resCur[0])
         query = f"""SELECT gt.RefType,SUM(Total),g.Color AS Currency,COUNT(gt.RefNo) AS InvoicesNb FROM goodstrans gt
                  JOIN goods g ON gt.ItemNo = g.ItemNo
                 WHERE gt.RefType IN ('PI_AP', 'PR_AP', 'SA_AP', 'SR_AP', 'OD_AP')
@@ -3270,32 +3276,32 @@ async def getPieChartData(compname:str):
                 color="yellow"
             elif result[0]=="OD_AP":
                 color="green"
-            if result[2]==Curencies[0]:
-                resCur1 = {
-                    "id":index,
-                    "value":result[1],
-                    "label": f"series {result[0]}",
-                "Cur":result[2],
-                "color":color,
-                                "invoices":result[3]
+            # if result[2]==Curencies[0]:
+            #     resCur1 = {
+            #         "id":index,
+            #         "value":result[1],
+            #         "label": f"series {result[0]}",
+            #     "Cur":result[2],
+            #     "color":color,
+            #                     "invoices":result[3]
 
-                }
-                ResultCur1.append(resCur1)
-            else:
-                resCur2 = {
-                    "id":index,
-                "value":result[1],
-                    "label": f"series {result[0]}",
-                "Cur":result[2],
-                                "color":color,
-                "invoices":result[3]
+            #     }
+            #     ResultCur1.append(resCur1)
+            # else:
+            resCur2 = {
+                "id":index,
+            "value":result[1],
+                "label": f"series {result[0]}",
+            "Cur":"",
+                            "color":color,
+            "invoices":result[3]
 
-                }
-                ResultCur2.append(resCur2)
+            }
+            ResultCur2.append(resCur2)
             index += 1  # Increment index for each result item
 
         
-        res.append(ResultCur1)
+        #res.append(ResultCur1)
         res.append(ResultCur2)
         return {"status":"success","result":res[0]}
     except Exception as e:       
@@ -3508,3 +3514,61 @@ DESC LIMIT 5  """
 #     return {"message": "Notification received"}
 app.mount("/locales", StaticFiles(directory="D:/PARADOXProjects/mohasaba2/public/locales"), name="locales")
 
+@app.get("/moh/recommendation/{compname}/{period_months}/", response_model=List[Dict[str, float]])
+def recommendation(compname:str,period_months: int):
+    transactions = get_data_from_db(compname)
+    try:
+        recommendations = prepare_data(transactions, period_months)
+        return recommendations
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+def prepare_data(transactions, period_months):
+    df = pd.DataFrame(transactions, columns=['item_name', 'date', 'quantity'])
+    
+    future_dates = {
+        1: 30,
+        3: 90,
+        6: 180
+    }
+
+    if period_months not in future_dates:
+        raise ValueError("Invalid period_months value")
+
+    df['date'] = pd.to_datetime(df['date'])
+    df = df.groupby(['item_name', pd.Grouper(key='date', freq='M')]).sum().reset_index()
+
+    recommendations = []
+
+    for item_name, group in df.groupby('item_name'):
+        group.set_index('date', inplace=True)
+        group = group.asfreq('M').fillna(0)
+
+        X = np.arange(len(group)).reshape(-1, 1)
+        y = group['quantity'].values
+
+        poly = PolynomialFeatures(degree=2)
+        X_poly = poly.fit_transform(X)
+
+        model = LinearRegression()
+        model.fit(X_poly, y)
+
+        future_X = np.arange(len(group) + future_dates[period_months] // 30).reshape(-1, 1)
+        future_X_poly = poly.transform(future_X)
+
+        predictions = model.predict(future_X_poly)
+
+        recommended_quantity = predictions[-1]  # Quantity for the last future date
+        recommendations.append({
+            'item_name': item_name,
+            'recommended_quantity': recommended_quantity
+        })
+
+    return recommendations
+def get_data_from_db(username):
+    conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT ItemNo, TDate, Qty FROM goodstrans")
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
