@@ -3517,31 +3517,38 @@ app.mount("/locales", StaticFiles(directory="D:/PARADOXProjects/mohasaba2/public
 @app.get("/moh/recommendation/{compname}/{period_months}/", response_model=List[Dict[str, float]])
 def recommendation(compname:str,period_months: int):
     transactions = get_data_from_db(compname)
+    print("ppp")
+    print(transactions[0])
     try:
         recommendations = prepare_data(transactions, period_months)
         return recommendations
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 def prepare_data(transactions, period_months):
-    df = pd.DataFrame(transactions, columns=['item_name', 'date', 'quantity'])
+    df = pd.DataFrame(transactions, columns=['ItemNo', 'date', 'quantity'])
     
     future_dates = {
         1: 30,
+        2:60,
         3: 90,
-        6: 180
+        4:120,
+        5:150,
+        6: 180,
+        9:270,
+        12:360
     }
 
     if period_months not in future_dates:
         raise ValueError("Invalid period_months value")
 
     df['date'] = pd.to_datetime(df['date'])
-    df = df.groupby(['item_name', pd.Grouper(key='date', freq='M')]).sum().reset_index()
+    df = df.groupby(['ItemNo', pd.Grouper(key='date', freq='ME')]).sum().reset_index()
 
     recommendations = []
 
-    for item_name, group in df.groupby('item_name'):
+    for ItemNo, group in df.groupby('ItemNo'):
         group.set_index('date', inplace=True)
-        group = group.asfreq('M').fillna(0)
+        group = group.asfreq('ME').fillna(0)
 
         X = np.arange(len(group)).reshape(-1, 1)
         y = group['quantity'].values
@@ -3557,9 +3564,9 @@ def prepare_data(transactions, period_months):
 
         predictions = model.predict(future_X_poly)
 
-        recommended_quantity = predictions[-1]  # Quantity for the last future date
+        recommended_quantity = round(predictions[-1])  # Quantity for the last future date
         recommendations.append({
-            'item_name': item_name,
+            'item_name': ItemNo,
             'recommended_quantity': recommended_quantity
         })
 
