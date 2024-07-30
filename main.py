@@ -4,7 +4,7 @@ import time
 from unicodedata import decimal
 from urllib import response
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 
@@ -3514,68 +3514,59 @@ DESC LIMIT 5  """
 #     return {"message": "Notification received"}
 app.mount("/locales", StaticFiles(directory="D:/PARADOXProjects/mohasaba2/public/locales"), name="locales")
 
-@app.get("/moh/recommendation/{compname}/{period_months}/", response_model=List[Dict[str, float]])
-def recommendation(compname:str,period_months: int):
-    transactions = get_data_from_db(compname)
-    print("ppp")
-    print(transactions[0])
+@app.get("/moh/recommendation/{compname}/{period_months}/{years_back}/", response_model=List[Dict[str, float]])
+def recommendation(compname: str, period_months: int, years_back: int):
     try:
-        recommendations = prepare_data(transactions, period_months)
+        transactions = get_data_from_db(compname, period_months, years_back)
+        recommendations = prepare_data(transactions, period_months, years_back)
         return recommendations
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-def prepare_data(transactions, period_months):
+
+def prepare_data(transactions, period_months, years_back):
     df = pd.DataFrame(transactions, columns=['ItemNo', 'date', 'quantity'])
-    
-    future_dates = {
-        1: 30,
-        2:60,
-        3: 90,
-        4:120,
-        5:150,
-        6: 180,
-        9:270,
-        12:360
-    }
-
-    if period_months not in future_dates:
-        raise ValueError("Invalid period_months value")
-
-    df['date'] = pd.to_datetime(df['date'])
-    df = df.groupby(['ItemNo', pd.Grouper(key='date', freq='ME')]).sum().reset_index()
+    df['date'] = pd.to_datetime(df['date'], format='%Y/%m/%d')
 
     recommendations = []
 
     for ItemNo, group in df.groupby('ItemNo'):
-        group.set_index('date', inplace=True)
-        group = group.asfreq('ME').fillna(0)
+        total_quantity = group['quantity'].sum()
+        average_quantity = total_quantity / years_back
+        recommended_quantity = round(average_quantity)
 
-        X = np.arange(len(group)).reshape(-1, 1)
-        y = group['quantity'].values
-
-        poly = PolynomialFeatures(degree=2)
-        X_poly = poly.fit_transform(X)
-
-        model = LinearRegression()
-        model.fit(X_poly, y)
-
-        future_X = np.arange(len(group) + future_dates[period_months] // 30).reshape(-1, 1)
-        future_X_poly = poly.transform(future_X)
-
-        predictions = model.predict(future_X_poly)
-
-        recommended_quantity = round(predictions[-1])  # Quantity for the last future date
         recommendations.append({
-            'item_name': ItemNo,
+            'item_number': ItemNo,
             'recommended_quantity': recommended_quantity
         })
 
     return recommendations
-def get_data_from_db(username):
-    conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost,port=9988,database = username) 
+
+def get_data_from_db(username, period_months, years_back):
+    conn = mariadb.connect(user="ots", password="Hkms0ft", host=dbHost, port=9988, database=username)
     cursor = conn.cursor()
-    
-    cursor.execute("SELECT ItemNo, TDate, Qty FROM goodstrans")
-    rows = cursor.fetchall()
+
+    now = datetime.now()
+    end_date = now.replace(day=1) + timedelta(days=32)
+    end_date = end_date.replace(day=1) - timedelta(days=1)
+    start_date = end_date - timedelta(days=period_months * 30)
+
+    query = """
+ SELECT ItemNo, TDate, SUM(Qout) as Qout
+FROM goodstrans
+WHERE TDate BETWEEN %s AND %s
+GROUP BY ItemNo, TDate
+    """
+
+    all_rows = []
+    for year in range(years_back):
+        year_start = start_date - timedelta(days=365 * year)
+        year_end = end_date - timedelta(days=365 * year)
+         # Print the query with parameters
+        print(f"Executing query: {query}")
+        print(f"Parameters: {year_start.strftime('%Y/%m/%d')}, {year_end.strftime('%Y/%m/%d')}")
+        cursor.execute(query, (year_start.strftime('%Y/%m/%d'), year_end.strftime('%Y/%m/%d')))
+        rows = cursor.fetchall()
+        all_rows.extend(rows)
+
     conn.close()
-    return rows
+    return all_rows
