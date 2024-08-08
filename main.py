@@ -3240,8 +3240,8 @@ async def updateUsersPermsissions(data:dict):
                     "message":{e}})
 
 
-@app.get("/moh/getPieChartData/{compname}/")
-async def getPieChartData(compname:str):
+@app.get("/moh/getPieChartData/{compname}/{option}/{type}/")
+async def getPieChartData(compname:str,option:int):
     try:
         username = compname
         ResultCur1=[]
@@ -3259,10 +3259,29 @@ async def getPieChartData(compname:str):
 
         #     if resCur[0]!='':
         #         Curencies.append(resCur[0])
+        if option ==1:
+            pi="PI_AP"
+            pr="PR_AP"
+            sa="SA_AP"
+            sr="SR_AP"
+            od="OD_AP"
+        elif option == 2:
+            pi="PI"
+            pr="PR"
+            sa="SA"
+            sr="SR"
+            od="OD"
+        elif option == 3:
+            pi="PI%"
+            pr="PR%"
+            sa="SA%"
+            sr="SR%"
+            od="OD%"
         query = f"""SELECT gt.RefType,SUM(Total),g.Color AS Currency,COUNT(gt.RefNo) AS InvoicesNb FROM goodstrans gt
                  JOIN goods g ON gt.ItemNo = g.ItemNo
-                WHERE gt.RefType IN ('PI_AP', 'PR_AP', 'SA_AP', 'SR_AP', 'OD_AP')
+                WHERE gt.RefType IN ('{pi}', '{pr}', '{sa}', '{sr}', '{od}')
                   GROUP BY gt.RefType """
+        print(query)
         cur.execute(query)
         for result in cur:
             color=""
@@ -3307,8 +3326,8 @@ async def getPieChartData(compname:str):
     except Exception as e:       
         print(f"Error : {e}")  
         return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"Info": "Failed", "message": str(e)})
-@app.get("/moh/getBarChartData/{compname}/")
-async def getBarChartData(compname:str):
+@app.get("/moh/getBarChartData/{compname}/{option}/")
+async def getBarChartData(compname:str,option:int):
     try:
         username = compname
   
@@ -3348,8 +3367,8 @@ GROUP BY
         print(f"Error : {e}")
         return JSONResponse(status_code=HTTPException(status_code=401, detail=str(e)))
 
-@app.get("/moh/getProfitData/{compname}/{year}")
-async def getProfitData(compname:str,year:str):
+@app.get("/moh/getProfitData/{compname}/{year}/{option}/")
+async def getProfitData(compname:str,year:str,option:int):
     try:
         username = compname
   
@@ -3379,8 +3398,8 @@ WHERE
         print(f"Error : {e}")
         return JSONResponse(status_code=HTTPException(status_code=401, detail=str(e)))
 
-@app.get("/moh/getLineChartDataProfit/{compname}/{year}")
-async def getLineChartDataProfit(compname:str,year:str):
+@app.get("/moh/getLineChartDataProfit/{compname}/{year}/{option}/")
+async def getLineChartDataProfit(compname:str,year:str,option:int):
     try:
         username = compname
   
@@ -3419,8 +3438,8 @@ WHERE
         print(f"Error : {e}")
         return JSONResponse(status_code=HTTPException(status_code=401, detail=str(e)))
 
-@app.get("/moh/getTopSellersByAmount/{compname}/{year}")
-async def getTopSellersByAmount(compname:str,year:str):
+@app.get("/moh/getTopSellersByAmount/{compname}/{year}/{option}/")
+async def getTopSellersByAmount(compname:str,year:str,option:int):
     try:
         username = compname
   
@@ -3450,9 +3469,10 @@ DESC LIMIT 5  """
         return JSONResponse(status_code=HTTPException(status_code=401, detail=str(e)))
     
 
-@app.get("/moh/getTopSellersByQuantity/{compname}/{year}")
-async def getTopSellersByQuantity(compname:str,year:str):
+@app.get("/moh/getTopSellersByQuantity/{compname}/{year}/{option}/")
+async def getTopSellersByQuantity(compname:str,year:str,option:int):
     try:
+
         username = compname
   
        
