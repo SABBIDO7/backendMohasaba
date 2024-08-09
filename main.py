@@ -3241,7 +3241,7 @@ async def updateUsersPermsissions(data:dict):
 
 
 @app.get("/moh/getPieChartData/{compname}/{option}/{type}/")
-async def getPieChartData(compname:str,option:int):
+async def getPieChartData(compname:str,option:int,type:str):
     try:
         username = compname
         ResultCur1=[]
@@ -3259,27 +3259,16 @@ async def getPieChartData(compname:str,option:int):
 
         #     if resCur[0]!='':
         #         Curencies.append(resCur[0])
-        if option ==1:
-            pi="PI_AP"
-            pr="PR_AP"
-            sa="SA_AP"
-            sr="SR_AP"
-            od="OD_AP"
-        elif option == 2:
-            pi="PI"
-            pr="PR"
-            sa="SA"
-            sr="SR"
-            od="OD"
-        elif option == 3:
-            pi="PI%"
-            pr="PR%"
-            sa="SA%"
-            sr="SR%"
-            od="OD%"
+        ref_types = {
+            1: {"PI": "PI_AP", "PR": "PR_AP", "SA": "SA_AP", "SR": "SR_AP", "OD": "OD_AP"},
+            2: {"PI": "PI", "PR": "PR", "SA": "SA", "SR": "SR", "OD": "OD"},
+            3: {"PI": "PI%", "PR": "PR%", "SA": "SA%", "SR": "SR%", "OD": "OD%"}
+        }
+
+        selected_types = ref_types[option]
         query = f"""SELECT gt.RefType,SUM(Total),g.Color AS Currency,COUNT(gt.RefNo) AS InvoicesNb FROM goodstrans gt
                  JOIN goods g ON gt.ItemNo = g.ItemNo
-                WHERE gt.RefType IN ('{pi}', '{pr}', '{sa}', '{sr}', '{od}')
+                WHERE gt.RefType LIKE
                   GROUP BY gt.RefType """
         print(query)
         cur.execute(query)
@@ -3326,8 +3315,8 @@ async def getPieChartData(compname:str,option:int):
     except Exception as e:       
         print(f"Error : {e}")  
         return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"Info": "Failed", "message": str(e)})
-@app.get("/moh/getBarChartData/{compname}/{option}/")
-async def getBarChartData(compname:str,option:int):
+@app.get("/moh/getBarChartData/{compname}/{option}/{type}/")
+async def getBarChartData(compname:str,option:int,type:str):
     try:
         username = compname
   
@@ -3367,8 +3356,8 @@ GROUP BY
         print(f"Error : {e}")
         return JSONResponse(status_code=HTTPException(status_code=401, detail=str(e)))
 
-@app.get("/moh/getProfitData/{compname}/{year}/{option}/")
-async def getProfitData(compname:str,year:str,option:int):
+@app.get("/moh/getProfitData/{compname}/{year}/{option}/{type}/")
+async def getProfitData(compname:str,year:str,option:int,type:str):
     try:
         username = compname
   
@@ -3398,8 +3387,8 @@ WHERE
         print(f"Error : {e}")
         return JSONResponse(status_code=HTTPException(status_code=401, detail=str(e)))
 
-@app.get("/moh/getLineChartDataProfit/{compname}/{year}/{option}/")
-async def getLineChartDataProfit(compname:str,year:str,option:int):
+@app.get("/moh/getLineChartDataProfit/{compname}/{year}/{option}/{type}/")
+async def getLineChartDataProfit(compname:str,year:str,option:int,type:str):
     try:
         username = compname
   
@@ -3438,8 +3427,8 @@ WHERE
         print(f"Error : {e}")
         return JSONResponse(status_code=HTTPException(status_code=401, detail=str(e)))
 
-@app.get("/moh/getTopSellersByAmount/{compname}/{year}/{option}/")
-async def getTopSellersByAmount(compname:str,year:str,option:int):
+@app.get("/moh/getTopSellersByAmount/{compname}/{year}/{option}/{type}/")
+async def getTopSellersByAmount(compname:str,year:str,option:int,type:str):
     try:
         username = compname
   
@@ -3469,8 +3458,8 @@ DESC LIMIT 5  """
         return JSONResponse(status_code=HTTPException(status_code=401, detail=str(e)))
     
 
-@app.get("/moh/getTopSellersByQuantity/{compname}/{year}/{option}/")
-async def getTopSellersByQuantity(compname:str,year:str,option:int):
+@app.get("/moh/getTopSellersByQuantity/{compname}/{year}/{option}/{type}/")
+async def getTopSellersByQuantity(compname:str,year:str,option:int,type:str):
     try:
 
         username = compname
