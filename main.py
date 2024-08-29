@@ -3265,10 +3265,17 @@ async def getPieChartData(compname:str,option:int,type:str):
             3: {"PI": "PI%", "PR": "PR%", "SA": "SA%", "SR": "SR%", "OD": "OD%"}
         }
 
+        
         selected_types = ref_types[option]
+
+        # Create a list of LIKE conditions
+        like_conditions = [f"gt.RefType LIKE '{value}'" for value in selected_types.values()]
+
+        # Join the conditions with OR
+        like_clause = " OR ".join(like_conditions)
         query = f"""SELECT gt.RefType,SUM(Total),g.Color AS Currency,COUNT(gt.RefNo) AS InvoicesNb FROM goodstrans gt
                  JOIN goods g ON gt.ItemNo = g.ItemNo
-                WHERE gt.RefType LIKE
+                WHERE {like_clause} 
                   GROUP BY gt.RefType """
         print(query)
         cur.execute(query)
@@ -3301,14 +3308,14 @@ async def getPieChartData(compname:str,option:int,type:str):
             "value":result[1],
                 "label": f"series {result[0]}",
             "Cur":"",
-                            "color":color,
+                            # "color":color,
             "invoices":result[3]
 
             }
             ResultCur2.append(resCur2)
             index += 1  # Increment index for each result item
 
-        
+            
         #res.append(ResultCur1)
         res.append(ResultCur2)
         return {"status":"success","result":res[0]}
